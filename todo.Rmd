@@ -1,0 +1,15 @@
+---
+title: "todo"
+output: html_document
+---
+
+# TODO
+
+1. Code zum laden der 5 variablen (vaccination, uhc, age, gdp, excess mortality) - load by link  html.. aber 
+2. variablen aufbreiten - vacc. für 5.5.2023 (closest available data point), excess mortality (spline regression estimate)  
+3. combine variables in df_complete_all (79 countries)  
+4. (append fig nexus) image  
+5. create fig correlation matrix pearson  
+6. calculate partial correlations  
+7. calculate median-split conditional correlations
+8. map available data
