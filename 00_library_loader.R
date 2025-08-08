@@ -1,22 +1,25 @@
 required_pkgs <- c(
-  "readr", "dplyr", "tidyr", "stringr", "rvest", "ppcor", "ggplot2", "ggcorrplot", "sf", "rnaturalearth", "rnaturalearthdata", "rnaturalearthhires",
-  "countrycode", "httr", "mgcv"
+  "cocor", "corrplot", "countrycode", "cowplot",
+  "ggpubr", "ggrepel", "mgcv", "naniar", "ppcor",
+  "rnaturalearth", "rnaturalearthdata", "tidyverse", "here"
 )
 
-install_if_missing <- function(pkgs, repos = "https://cloud.r-project.org") {
-  to_install <- setdiff(pkgs, rownames(installed.packages()))
+install_if_missing <- function(pkgs, repos = getOption("repos")[["CRAN"]] %||% "https://cloud.r-project.org") {
+  ip <- rownames(installed.packages())
+  to_install <- setdiff(pkgs, ip)
   if (length(to_install)) {
     message("Installing: ", paste(to_install, collapse = ", "))
-    install.packages(to_install, repos = repos, dependencies = TRUE, type = "binary")
+    install.packages(to_install, repos = repos)
   }
 }
 
 install_if_missing(required_pkgs)
 
-if (!requireNamespace("rnaturalearthdata", quietly = TRUE)) {
-  message("Trying GitHub for rnaturalearthdata …")
-  if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
-  devtools::install_github("ropensci/rnaturalearthdata")
-}
+# Attach them all
+failed <- vapply(required_pkgs, function(p) {
+  suppressPackageStartupMessages(require(p, character.only = TRUE))
+}, logical(1L), USE.NAMES = TRUE)
 
-invisible(lapply(required_pkgs, require, character.only = TRUE, quietly = TRUE))
+if (any(!failed)) {
+  stop("Failed to load: ", paste(names(failed)[!failed], collapse = ", "))
+}

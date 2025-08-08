@@ -1,37 +1,78 @@
-source("00_library_loader.R")
+# 01_download.R — automated downloads matching the old pipeline
+source(here::here("ready_to_import", "00_library_loader.R"))
 
-dir.create("data_raw", showWarnings = FALSE)
+# Create raw download folder
+dir.create(here::here("ready_to_import", "data_raw"), showWarnings = FALSE, recursive = TRUE)
 
-source("00_library_loader.R")
-dir.create("data_raw", showWarnings = FALSE)
+# Quiet retrying downloader
+dl <- function(url, out, tries = 2) {
+  for (i in seq_len(tries)) {
+    ok <- try(utils::download.file(url, out, mode = "wb", quiet = TRUE), silent = TRUE)
+    if (!inherits(ok, "try-error")) {
+      return(invisible(TRUE))
+    }
+    if (i < tries) Sys.sleep(1.5 * i)
+  }
+  stop("Failed to download: ", url, " -> ", out)
+}
 
-# GDP & UHC (raw ZIPs) --------------------------------------------------
-download.file("https://api.worldbank.org/v2/en/indicator/NY.GDP.PCAP.CD?downloadformat=csv",
-  "data_raw/gdp.zip",
-  mode = "wb", quiet = TRUE
+# 1) GDP per capita
+dl(
+  "https://api.worldbank.org/v2/en/indicator/NY.GDP.PCAP.CD?downloadformat=csv",
+  here::here("ready_to_import", "data_raw", "gdp.zip")
 )
-download.file("https://api.worldbank.org/v2/en/indicator/SH.UHC.SRVS.CV.XD?downloadformat=csv",
-  "data_raw/uhc.zip",
-  mode = "wb", quiet = TRUE
+
+# 2) UHC service coverage index
+dl(
+  "https://api.worldbank.org/v2/en/indicator/SH.UHC.SRVS.CV.XD?downloadformat=csv",
+  here::here("ready_to_import", "data_raw", "uhc.zip")
 )
 
-# Median-age CSV --------------------------------------------------------
-download.file(
-  "https://population.un.org/wpp/Download/Files/1_Indicators%20(Standard)/CSV_FILES/WPP2024_POP_F16_1_MEDIAN_AGE_BOTH_SEXES.csv",
-  "data_raw/median_age.csv",
-  mode = "wb", quiet = TRUE
+# 3) Median age — build repo-style age2022.csv directly
+dl(
+  "https://ourworldindata.org/grapher/median-age.csv",
+  here::here("ready_to_import", "data_raw", "median_age.csv")
 )
 
-# Vaccination long series ----------------------------------------------
-download.file(
+dir.create(here::here("ready_to_import", "data_manipulated"), recursive = TRUE, showWarnings = FALSE)
+
+readr::read_csv(here::here("ready_to_import", "data_raw", "median_age.csv"), show_col_types = FALSE) %>%
+  dplyr::filter(Year == 2022, !is.na(Code)) %>%
+  dplyr::mutate(
+    `Median age - Sex: all - Age: all - Variant: medium` = NA_real_,
+    time = Year
+  ) %>%
+  dplyr::select(
+    Entity, Code, Year,
+    `Median age - Sex: all - Age: all - Variant: estimates`,
+    `Median age - Sex: all - Age: all - Variant: medium`,
+    time
+  ) %>%
+  dplyr::arrange(Entity) %>%
+  readr::write_csv(
+    here::here("ready_to_import", "data_manipulated", "age", "age2022_from_web.csv"),
+    na = "NA"
+  )
+
+# 4) Vaccination doses per 100 people
+dl(
   "https://ourworldindata.org/grapher/covid-vaccination-doses-per-capita.csv",
-  "data_raw/vacc_per_cap.csv",
-  mode = "wb", quiet = TRUE
+  here::here("ready_to_import", "data_raw", "vacc_per_cap.csv")
 )
 
-# Excess-mortality long series -----------------------------------------
-download.file(
+# 5) Excess mortality
+dl(
   "https://ourworldindata.org/grapher/cumulative-excess-deaths-per-million-covid.csv",
-  "data_raw/excess_mort_long.csv",
-  mode = "wb", quiet = TRUE
+  here::here("ready_to_import", "data_raw", "excess_mort_long.csv")
 )
+
+message("Downloads complete -> ", here::here("ready_to_import", "data_raw"))
+
+# now check via sanity if it is indeed the same str() as the old stationary csv files
+
+# one folder before ready_to_import - data folder:
+# age <- readr::read_delim("data/Age/age2022.csv") %>%
+# gdp <- gdp_data <- readr::read_csv("data/gdp/gdp-per-capita-worldbank.csv") %>%
+# excess_dat <- readr::read_csv("data/mortality/withoutEstimates/cumulative-excess-deaths-per-million-covid.csv")
+# vacc <- vaccination_data_clean <- readr::read_csv("data/vaccination/covid-19-vaccine-doses-administered-per-100-people(1).csv") %>%
+# uhc essential_health_data <- readr::read_csv("data/health/healthcare-access-quality-un.csv") %>%
