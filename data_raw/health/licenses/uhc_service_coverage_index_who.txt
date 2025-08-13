@@ -1,0 +1,10 @@
+UHC Service Coverage Index (SDG 3.8.1)
+Source: World Health Organization (WHO) — Global Health Observatory
+License: Creative Commons Attribution 4.0 International (CC BY 4.0) with WHO additional terms:
+ - No implication of WHO endorsement or affiliation
+ - No de-anonymization or misrepresentation
+ - Disputes resolved by arbitration under UNCITRAL rules
+Terms: https://data.who.int/terms-and-conditions
+Indicator page: https://data.who.int/indicators/i/3805B1E/9A706FD
+Retrieved for this repository: 2024-12-09
+Data file(s) in this repo: data/health/healthcare-access-quality-un.csv

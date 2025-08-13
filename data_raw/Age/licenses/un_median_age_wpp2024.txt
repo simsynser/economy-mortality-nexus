@@ -1,0 +1,9 @@
+Median Age – World Population Prospects 2024 (Online Edition)
+Source: United Nations, Department of Economic and Social Affairs, Population Division
+License: Creative Commons Attribution 3.0 IGO (CC BY 3.0 IGO) — http://creativecommons.org/licenses/by/3.0/igo/
+Suggested citation: United Nations, Department of Economic and Social Affairs, Population Division (2024). World Population Prospects 2024, Online Edition.
+URL: https://population.un.org/wpp/
+Retrieved for this repository: 2025-03-20
+Data file(s) in this repo: data/Age/age2022.csv; ready_to_import/data_manipulated/age/age2022_manipulated.csv
+
+Disclaimer: The designations employed and the presentation of material do not imply the expression of any opinion by the United Nations concerning the legal status of any country, territory, city or area, or of its authorities, or concerning the delimitation of its frontiers or boundaries. No UN endorsement is implied.

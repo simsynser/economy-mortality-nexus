@@ -1,0 +1,6 @@
+GDP per capita (current US$) — World Development Indicators (ID: NY.GDP.PCAP.CD)
+Source: World Bank (WDI). Original data compiled from national statistical offices, central banks, OECD, and WB staff estimates.
+License: Creative Commons Attribution 4.0 International (CC BY 4.0) — https://creativecommons.org/licenses/by/4.0/
+URL: https://data.worldbank.org/indicator/NY.GDP.PCAP.CD
+Retrieved for this repository: 2024-12-09
+Data file(s) in this repo: data/gdp/gdp-per-capita-worldbank.csv
