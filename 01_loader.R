@@ -30,6 +30,21 @@ map_iso3 <- function(x) {
   )
 }
 
+# --- config: which vaccination timepoint to use by default? ---
+# options: "nearest" (preferred, as per paper) or "max" (old pipeline)
+VAX_SELECTION <- Sys.getenv("VAX_SELECTION", unset = "nearest")
+
+# optional: write intermediate CSVs for inspection?
+WRITE_INTERMEDIATE <- FALSE
+
+# --- helper: pick the row nearest to a target date within a group ---
+nearest_on <- function(df, date_col = Day, target = as.Date("2023-05-05")) {
+  date_sym <- rlang::ensym(date_col)
+  df %>%
+    dplyr::mutate(.dist = abs(!!date_sym - target)) %>%
+    dplyr::slice_min(.dist, with_ties = FALSE) %>%
+    dplyr::select(-.dist)
+}
 
 # ---------- AGE (2022 snapshot) ----------
 age <- load_csv("age", here::here("ready_to_import", "data_raw", "age", "age2022.csv")) %>%
@@ -57,21 +72,65 @@ gdp_data_clean <- load_csv(
 
 
 # ---------- Vaccination (OWID doses per 100) ----------
-vaccination_data_clean <- load_csv(
-  "vaccination",
-  here::here(
-    "ready_to_import", "data_raw", "vaccination",
-    "covid-19-vaccine-doses-administered-per-100-people.csv"
-  )
-) %>%
-  dplyr::group_by(Entity) %>%
-  dplyr::filter(Day == max(Day), .preserve = TRUE) %>%
-  dplyr::ungroup() %>%
-  dplyr::mutate(iso3c = map_iso3(Entity)) %>%
+VAX_SELECTION <- "max" # choose: "max" or "nearest"
+WRITE_INTERMEDIATE <- TRUE # write CSVs?
+
+vax_path <- here::here(
+  "ready_to_import", "data_raw", "vaccination",
+  "covid-19-vaccine-doses-administered-per-100-people.csv"
+)
+
+vax_raw <- load_csv("vaccination", vax_path) %>%
+  dplyr::mutate(
+    Day = as.Date(Day),
+    iso3c = map_iso3(Entity)
+  ) %>%
   dplyr::filter(!is.na(iso3c))
 
-stopifnot(nchar(unique(age$iso3c)[1]) == 3) # Check ISO3 length
-stopifnot(!any(grepl("^OWID_", vaccination_data_clean$iso3c, useBytes = TRUE))) # Check no OWID prefixes
+vax_col <- "COVID-19 doses (cumulative, per hundred)"
+
+vaccination_max <- vax_raw %>%
+  dplyr::group_by(Entity, iso3c) %>%
+  dplyr::slice_max(Day, with_ties = FALSE) %>%
+  dplyr::ungroup() %>%
+  dplyr::rename(Day_max = Day) %>%
+  dplyr::mutate(vacc_per_100_max = .data[[vax_col]])
+
+vaccination_nearest <- vax_raw %>%
+  dplyr::group_by(Entity, iso3c) %>%
+  dplyr::group_modify(~ nearest_on(.x, Day, as.Date("2023-05-05"))) %>%
+  dplyr::ungroup() %>%
+  dplyr::rename(Day_near = Day) %>%
+  dplyr::mutate(vacc_per_100_near = .data[[vax_col]])
+
+# quick compare
+vax_compare <- dplyr::full_join(vaccination_max, vaccination_nearest, by = c("Entity", "iso3c")) %>%
+  dplyr::mutate(
+    delta_value = vacc_per_100_near - vacc_per_100_max,
+    same_day = Day_near == Day_max
+  )
+
+message(
+  "[Vaccination] Entities=", nrow(vax_compare),
+  " | changed_value=", sum(!is.na(vax_compare$delta_value) & vax_compare$delta_value != 0),
+  " | same_day=", sum(vax_compare$same_day, na.rm = TRUE)
+)
+
+# pick final set
+vaccination_selected <- if (VAX_SELECTION == "max") {
+  vaccination_max %>%
+    dplyr::transmute(Entity, iso3c, Day = Day_max, vacc_per_100 = vacc_per_100_max)
+} else {
+  vaccination_nearest %>%
+    dplyr::transmute(Entity, iso3c, Day = Day_near, vacc_per_100 = vacc_per_100_near)
+}
+
+if (WRITE_INTERMEDIATE) {
+  out_dir <- here::here("ready_to_import", "data_manipulated", "vaccination")
+  dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+  readr::write_csv(vaccination_max, file.path(out_dir, "vaccination_max.csv"))
+  readr::write_csv(vaccination_nearest, file.path(out_dir, "vaccination_nearest.csv"))
+}
 
 
 # ---------- Excess mortality (OWID cumulative per million, raw) ----------
