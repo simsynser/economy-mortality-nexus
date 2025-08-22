@@ -10,6 +10,7 @@ dir.create(here::here("ready_to_import", "data_raw"), recursive = TRUE, showWarn
 dir.create(here::here("ready_to_import", "data_manipulated"), recursive = TRUE, showWarnings = FALSE)
 
 # ---- helpers ----
+# load_csv(): small wrapper with a friendly OK/error message
 load_csv <- function(label, path) {
   if (!file.exists(path)) {
     stop(sprintf("[ERROR] %s not found at: %s", label, fs::path_rel(path, here::here())))
@@ -18,7 +19,7 @@ load_csv <- function(label, path) {
   readr::read_csv(path, show_col_types = FALSE)
 }
 
-# quiet name -> ISO3 mapper with a few manual matches used across datasets
+# map_iso3(): quiet country name -> ISO3 mapper with a few manual matches
 map_iso3 <- function(x) {
   suppressWarnings(
     countrycode::countrycode(
@@ -34,7 +35,8 @@ map_iso3 <- function(x) {
   )
 }
 
-# picking the row nearest to a target date (used for vacc)
+# nearest_on(): pick the single row whose date is closest to `target`
+# - `date_col` is a column symbol (default: Day)
 nearest_on <- function(df, date_col = Day, target = as.Date("2023-05-05")) {
   date_sym <- rlang::ensym(date_col)
   df %>%
@@ -44,8 +46,9 @@ nearest_on <- function(df, date_col = Day, target = as.Date("2023-05-05")) {
 }
 
 # ---- config ----
-# "nearest" or "max" !!! Default is "max" right now for the old struc.
-VAX_SELECTION <- Sys.getenv("VAX_SELECTION", unset = "max")
+# Choose which vaccination snapshot to expose downstream
+# (both variants are written to disk; this only controls the in-memory selection)
+VAX_SELECTION <- Sys.getenv("VAX_SELECTION", unset = "nearest")
 WRITE_INTERMEDIATE <- isTRUE(as.logical(Sys.getenv("WRITE_INTERMEDIATE", "FALSE")))
 VAX_TARGET_DATE <- as.Date("2023-05-05")
 
@@ -95,14 +98,14 @@ vax_raw <- load_csv("vaccination", vax_path) %>%
     Day   = as.Date(Day),
     iso3c = map_iso3(Entity)
   ) %>%
-  dplyr::filter(!is.na(iso3c)) # drops OWID_* regions, EU, etc.
+  dplyr::filter(!is.na(iso3c)) # drop OWID_* aggregates, EU, etc.
 
 vax_col <- "COVID-19 doses (cumulative, per hundred)"
 if (!(vax_col %in% names(vax_raw))) {
   stop("Vaccination column not found: ", vax_col)
 }
 
-# A) Latest available day per entity
+# A) latest available day per entity
 vaccination_max <- vax_raw %>%
   dplyr::group_by(Entity, iso3c) %>%
   dplyr::slice_max(Day, with_ties = FALSE) %>%
@@ -113,7 +116,7 @@ vaccination_max <- vax_raw %>%
     vacc_per_100_max = .data[[vax_col]]
   )
 
-# B) Nearest to target date per entity
+# B) nearest to target date per entity
 vaccination_nearest <- vax_raw %>%
   dplyr::group_by(Entity, iso3c) %>%
   dplyr::group_modify(~ nearest_on(.x, Day, VAX_TARGET_DATE)) %>%
@@ -124,7 +127,7 @@ vaccination_nearest <- vax_raw %>%
     vacc_per_100_near = .data[[vax_col]]
   )
 
-# Quick comparison log
+# quick comparison log (how different are the two definitions?)
 vax_compare <- dplyr::full_join(vaccination_max, vaccination_nearest, by = c("Entity", "iso3c")) %>%
   dplyr::mutate(
     delta_value = vacc_per_100_near - vacc_per_100_max,
@@ -137,7 +140,27 @@ message(
   " | same_day=", sum(vax_compare$same_day, na.rm = TRUE)
 )
 
-# Select final set (legacy name vaccination_data_clean is preserved)
+# Always write both CSVs so the comparison script can run without extra setup
+vax_out_dir <- here::here("ready_to_import", "data_manipulated", "vaccination")
+dir.create(vax_out_dir, recursive = TRUE, showWarnings = FALSE)
+
+readr::write_csv(
+  vaccination_max,
+  file.path(vax_out_dir, "vaccination_max.csv")
+)
+readr::write_csv(
+  vaccination_nearest,
+  file.path(vax_out_dir, "vaccination_nearest.csv")
+)
+
+message(
+  "[Vaccination] wrote CSVs -> ",
+  fs::path_rel(file.path(vax_out_dir, "vaccination_max.csv"), here::here()),
+  " | ",
+  fs::path_rel(file.path(vax_out_dir, "vaccination_nearest.csv"), here::here())
+)
+
+# Choose which vaccination table to expose downstream
 vaccination_selected <- switch(VAX_SELECTION,
   "max" = dplyr::transmute(vaccination_max,
     Entity, iso3c,
@@ -164,7 +187,7 @@ excess_dat <- load_csv(
   here::here("ready_to_import", "data_raw", "mortality", "cumulative-excess-deaths-per-million-covid.csv")
 )
 
-# ---- sanity checks ----
+# ---- optional sanity checks (fail fast) ----
 stopifnot(all(nchar(age$iso3c[!is.na(age$iso3c)]) == 3))
 stopifnot(all(nchar(vaccination_data_clean$iso3c) == 3))
 stopifnot(!any(grepl("^OWID_", vaccination_data_clean$iso3c, useBytes = TRUE)))

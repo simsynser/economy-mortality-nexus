@@ -59,7 +59,7 @@ cmp <- full_join(v_max, v_near, by = c("iso3c", "Entity")) %>%
 
 write_csv(cmp, out_file)
 
-cat("[schnell_Vergleich] gespeichert ->", out_file, "\n")
+cat("[schnell_vergleich] gespeichert ->", out_file, "\n")
 cat(
   "Entities:", nrow(cmp),
   "| geändert (delta_abs>0):", sum(cmp$delta_abs > 0, na.rm = TRUE),

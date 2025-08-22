@@ -2,69 +2,69 @@
 
 ## 1) Daten-Auditing
 
-* Quellen & Lizenzen sind in **`DATA_SOURCES.md`** beschrieben; in **`ready_to_import/data_raw/**`** liegen zusätzlich kurze **LICENSES-Texte** pro Datensatz.
+* Quellen & Lizenzen in **`DATA_SOURCES.md`**; in **`ready_to_import/data_raw/**`** liegen **LICENSES** pro Datensatz.
 * **“Last synchronized” (per Git-Historie):**
-
   * Median age (UN WPP via OWID): **2025-03-20**
   * GDP per capita (World Bank): **2024-12-09**
-  * UHC service coverage index (WHO via World Bank): **2024-12-09**
+  * UHC service coverage index (WHO via WB): **2024-12-09**
   * Excess mortality (HMD/WMD via OWID): **2025-04-06**
   * Vaccination doses (OWID/WHO): **2025-03-21**
-    *Hinweis:* Repo-Zeitstempel der verwendeten Kopien, **nicht** die Anbieter-Updatezeiten.
+    *Hinweis:* Repo-Zeitstempel der Kopien, **nicht** die Updatezeiten der Anbieter.
 
 ## 2) Library-Loader
 
-* Neues Skript **`ready_to_import/00_library_loader.R`** (Packages, `here()`, Helper).
+* **`ready_to_import/00_library_loader.R`**: lädt Packages, setzt `here()`, stellt gemeinsame Helper bereit.
 
 ## 3) `01_loader.R`
 
 * Lädt alle CSVs aus **`ready_to_import/data_raw/`**, vereinheitlicht ISO3 via `map_iso3()`.
-
 * **Impfvarianten (wichtiger Switch):**
-
   * `vaccination_max` = letzter verfügbarer Tag (altes Verhalten)
-  * `vaccination_nearest` = **nächstes Datum zu 2023-05-05** (Paper-konform)
-  * Kurzvergleich (aktueller Lauf): **217** Länder; **119** geänderter Wert (*nearest ≠ max*); **97** gleicher Tag.
-  * CSVs zur Einsicht:
+  * `vaccination_nearest` = **Datum am nächsten zu 2023-05-05** (Paper-konform, empfohlen)
+* Kurzvergleich (aktueller Lauf): **217** Länder; **119** mit geändertem Wert (*nearest ≠ max*); **97** gleicher Tag.
+  **Top-Abweichungen (Dosen/100):** TKM −51.7, JPN −39.7, DJI −29.1, ESP −28.1, TUN −27.3.
+* Artefakte abgelegt:
+  * `data_manipulated/vaccination/vaccination_max.csv`
+  * `data_manipulated/vaccination/vaccination_nearest.csv`
+  * Vergleich: `scripts/schnell_vergleich.R` → `data_manipulated/vaccination/vaccination_compare_short.csv` oder Data > `cmp`
+* Auswahl per **`VAX_SELECTION <- "nearest"`** (empfohlen) oder `"max"`.
 
-    * `ready_to_import/data_manipulated/vaccination/vaccination_max.csv`
-    * `ready_to_import/data_manipulated/vaccination/vaccination_nearest.csv`
-  * Auswahl per **`VAX_SELECTION <- "nearest"`** (empfohlen) oder `"max"`.
+## 4) `02_clean.R`
 
-## 4) `02_clean.R` (in Arbeit)
+* **Excess Mortality** am **2023-05-05** via *altem* GAM **1:1** beibehalten.
+* Output-Join: `data_manipulated/analysis_table.csv`
+  Spalten: `iso3c, median_age, gdp, uhc, vacc, vax_day, excess_mort`.
+* **Bekannte Stolpersteine (dokumentiert im Skript-Header):**
+  * **Extrapolation** möglich, wenn 05-05-2023 außerhalb der Reihe liegt.
+  * **Index-Abgriff** via `(Zieldatum − min(Day))` -> Off-by-one-Risiko bei Lücken/Zeitzonen.
+  * **GCV-Default** in `mgcv::gam()` kann bei kurzen/rauschigen Reihen “wiggly” Fits erzeugen.
+  * **Kumulativdaten** können durch Glättung leicht nicht-monoton werden; wir entnehmen nur den Stichtagswert.
 
-* GAM-Schätzung für Excess Mortality wird auf **exakte Vorhersage am 2023-05-05** umgestellt (kein Index-Trick), inkl. **Warnhinweis bei Extrapolation**.
+## 5) `03_analysis.R`
 
+* **Paarweise Korrelationen** (Pearson/Spearman) inkl. NA-Zeilenverlust-Stats.
 
-## Kurzfazit: Impf-Definitionen (`max` vs. `nearest` zu 2023-05-05)
+  * Aktueller Lauf: **n_total = 242**, **Complete cases = 80** Länder.
+  * Ergebnisse:
+    * `gdp ~ median_age`: *r* = **0.666**, ρ = **0.855** (n = 180)
+    * `gdp ~ uhc`: *r* = **0.717**, ρ = **0.898** (n = 177)
+    * `vacc ~ excess_mort`: *r* = **−0.443**, ρ = **−0.470** (n = 88)
+* Artefakte:
+  * `data_manipulated/analysis_correlations.csv`
+  * `data_manipulated/analysis_complete_cases.csv` (Complete-Case-Tabelle inkl. Kontinent)
 
-* Verglichen: **217** Länder/Gebiete
-* **119** (≈55 %) haben einen **anderen Wert** (*nearest* ≠ *max*)
-* **97** (≈45 %) haben **denselben Tag** (*nearest == max*)
-* Muster: überwiegend `delta_value < 0` → *nearest* < *max*, weil nach dem 05.05.2023 vielerorts weiter geimpft wurde (spätere Dosen zählen nur bei *max*).
+## Offene Punkte / Nächste Schritte
 
-**Top-Abweichungen (Dosen/100):** Turkmenistan −51.7, Japan −39.7, Dschibuti −29.1, Spanien −28.1, Tunesien −27.3.
+1. **Korrelations-Matrix (Fig):** Heatmap/Viz der Pearson-Koeffizienten mit *n*-Annot.
+2. **Partielle Korrelationen:** z. B. `excess_mort ~ vacc | (gdp, median_age, uhc)`; sauber loggen, welche Länder im Modell landen.
+3. **Median-Split / konditionierte Korr.:** 
+4. **“Fig Nexus” anfügen:** kleines Panel-Bild in README oder `04_plots.R`.
+5. **Map “available data”:** Choropleth der Complete-Cases (80/242) plus Coverage pro Variable.
+6. **run_all.sh**: Shell-Skript, das alle Schritte in der richtigen Reihenfolge ausführt noch schreiben.
 
-**Repro:**
-`scripts/schnell_Vergleich.R` erzeugt
-`ready_to_import/data_manipulated/vaccination/vaccination_compare_short.csv`
-mit `delta_value`, `delta_abs`, `day_diff`.
+## Reproduzierbarkeit soweit
 
-**Empfehlung:** Standardmäßig **`nearest`** verwenden; **`max`** als Sensitivitäts-Variante beibehalten.
-
-# Geplant:
-
-## Geplant für: `02_clean.R` / GAM
-
-* **Warum anpassen?** Das alte Skript griff Vorhersagen per Tagesdifferenz-Index ab (fragil bei Lücken/off-by-one).
-* **Plannung:** Vorhersage **für den exakten Modell-Prädiktor** am 2023-05-05; keine manuelle Indexierung.
-* **Sicherheit:** Wir loggen je Land die Distanz zum Ziel-Datum und warnen/flaggen **Extrapolation** (wenn 05.05.2023 **außerhalb** der Datenreichweite liegt).
-
-
-# TODO
-3. combine variables in df_complete_all (79 countries)  
-4. (append fig nexus) image  
-5. create fig correlation matrix pearson  
-6. calculate partial correlations  
-7. calculate median-split conditional correlations
-8. map available data
+1. `01_loader.R`
+2. `02_clean.R` → schreibt `analysis_table.csv`
+3. `03_analysis.R` → schreibt `analysis_correlations.csv` & `analysis_complete_cases.csv`
+*(Optional)* `schnell_vergleich.R` für Delta - Vacc vergleich max() vs nearest.
