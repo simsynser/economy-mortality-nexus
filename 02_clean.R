@@ -1,32 +1,29 @@
-# 02_clean.R — Excess Mortality per 2023-05-05 (altes GAM, 1:1 Verhalten)
-# -----------------------------------------------------------------------------
+# 02_clean.R — Excess Mortality per 2023-05-05 (old GAM form, index-free prediction)
+# ----------------------------------------------------------------------------------
 # Zweck
-# - Für jedes Land den kumulativen Excess-Mortality-Wert am Stichtag 2023-05-05
-#   schätzen – mit demselben GAM-Setup wie im ursprünglichen Skript.
+# - Für jedes Land den kumulativen Excess-Mortality-Wert am Stichtag 2023-05-05 schätzen.
+# - Modellform wie im alten Skript (mgcv::gam(y ~ s(x, bs="cs")) mit GCV-Default),
+#   aber OHNE Index-Abgriff: direkte Vorhersage am Ziel-Datum; außerhalb -> Fallback „nearest observed“.
 #
 # Abhängigkeiten (kommen aus 01_loader.R)
 # - Objects: age, gdp_data_clean, essential_health_data_clean,
 #            vaccination_data_clean (nearest/max via VAX_SELECTION), excess_dat
 #
-# Output
-# - data_manipulated/analysis_table.csv  (Join: median_age, gdp, uhc, vacc, excess_mort, vax_day)
+# Outputs
+# - ready_to_import/data_manipulated/mortality_gam_2023-05-05.csv
+# - ready_to_import/data_manipulated/analysis_table.csv
+#   (Join: iso3c, median_age, gdp, uhc, vacc, vax_day, excess_mort)
 #
-# Modell (unverändert zur alten Logik)
-# - mgcv::gam(y ~ s(x, bs="cs"), GCV-Default); Vorhersage via täglichem Grid;
-#   Abgriff des Zielwerts per Index (as.Date("2023-05-05") - min(Day)).
-#
-# Wichtige Hinweise / Stolpersteine
-# - Extrapolation: Liegt der Stichtag außerhalb der beobachteten Reihe, fällt
-#   die Indexposition außerhalb des Vorhersage-Rasters → NA möglich.
-# - Off-by-one-Risiko: Der Index ist (Zieldatum - min(Day)) ohne +1, wie im
-#   alten Code; kann bei Datenlücken/Zeitzonen um 1 Tag versetzt sein.
-# - GCV-Default: Ohne method="REML" kann das Glätten bei kurzen/rauschigen
-#   Reihen „wiggly“ werden.
-# - Kumulativdaten: Glätten kann kleine Nicht-Monotonien erzeugen; wir entnehmen
-#   nur einen Stichtagswert, daher tolerierbar.
+# Hinweise / mögliche Stolpersteine
+# - Sehr kurze/grobe Reihen: Wenn zu wenige eindeutige x-Werte, wird robust auf
+#   „nächstbeobachtet“ zurückgegriffen (anstatt wacklige Fits zu erzwingen).
+# - GCV-Default: Ohne method="REML" können bei rauschigen Reihen glatte Kurven
+#   „wiggly“ werden — wir entnehmen nur den Stichtagswert.
+# - Kumulativdaten: Glätten kann leichte Nicht-Monotonien erzeugen; für den
+#   Stichtagswert tolerierbar.
 #
 # Referenzen
-# - mgcv (GAM-Grundlagen): https://cran.r-project.org/package=mgcv
+# - mgcv (GAM): https://cran.r-project.org/package=mgcv
 # - ggplot2 stat_smooth (Default-GAM: y ~ s(x, bs="cs")):
 #   https://ggplot2.tidyverse.org/reference/geom_smooth.html
 
@@ -40,60 +37,61 @@ stopifnot(
 
 TARGET_DATE <- as.Date("2023-05-05")
 
-# --- GAM-Schätzung je Land (alte Logik, aber k dynamisch) -------------------
-est_excess_oldmodel <- function(df, target = TARGET_DATE) {
+# --- Helper: Länderspezifische Schätzung am Stichtag (indexfrei) -------------
+est_excess_oldform_indexfree <- function(df, target = TARGET_DATE) {
   df <- df %>%
     dplyr::filter(!is.na(Day), !is.na(cum_excess_per_million_proj_all_ages)) %>%
     dplyr::mutate(
       Day     = as.Date(Day),
-      Day_num = as.numeric(Day)
+      x       = as.numeric(Day),
+      y       = cum_excess_per_million_proj_all_ages
     )
 
   if (nrow(df) == 0) {
     return(tibble::tibble(value = NA_real_))
   }
 
-  x <- df$Day_num
-  y <- df$cum_excess_per_million_proj_all_ages
-  n_uniq <- length(unique(x))
-
-  # Sehr kurze Reihen: altes Modell kann hier nicht stabil fitten -> nimm den nächsten beobachteten Wert
+  # zu wenige eindeutige x -> robust: nächstliegender beobachteter Wert
+  n_uniq <- length(unique(df$x))
   if (n_uniq < 3L) {
     near <- df %>% dplyr::slice_min(abs(Day - target), with_ties = FALSE)
-    return(tibble::tibble(value = near$cum_excess_per_million_proj_all_ages))
+    return(tibble::tibble(value = near$y))
   }
 
-  # Dynamisches k, aber nie > 10 (entspricht mgcv-Default), und mind. 3
+  # Dynamisches k (konservativ), ansonsten alte Modellform (GCV, bs="cs")
   k_val <- max(3L, min(10L, n_uniq - 1L))
+  fit <- try(mgcv::gam(y ~ s(x, bs = "cs", k = k_val), data = df), silent = TRUE)
 
-  # GCV-Default, cs-Basis – nur k wird gesetzt
-  mod <- mgcv::gam(formula = y ~ s(x, bs = "cs", k = k_val))
-
-  # tägliche Sequenz & Vorhersage (wie gehabt)
-  grid <- data.frame(x = seq(from = min(df$Day_num), to = max(df$Day_num), by = 1))
-  fit <- mgcv::predict.gam(mod, newdata = grid)
-
-  # identischer Indexzugriff wie im alten Code (OHNE +1) – kann Off-by-one erzeugen
-  idx <- as.integer(as.Date(target) - min(df$Day))
-
-  # Wenn außerhalb des Rasters -> NA (statt Fehler)
-  if (idx < 1L || idx > length(fit)) {
-    return(tibble::tibble(value = NA_real_))
+  if (inherits(fit, "try-error")) {
+    near <- df %>% dplyr::slice_min(abs(Day - target), with_ties = FALSE)
+    return(tibble::tibble(value = near$y))
   }
 
-  tibble::tibble(value = as.numeric(fit[idx]))
+  # Ziel liegt innerhalb der beobachteten Zeitspanne? -> direkt am Datum vorhersagen
+  if (target >= min(df$Day) && target <= max(df$Day)) {
+    pred <- mgcv::predict.gam(fit, newdata = data.frame(x = as.numeric(target)))
+    return(tibble::tibble(value = as.numeric(pred)))
+  } else {
+    # außerhalb -> robust: nächstliegender beobachteter Wert
+    near <- df %>% dplyr::slice_min(abs(Day - target), with_ties = FALSE)
+    return(tibble::tibble(value = near$y))
+  }
 }
 
+# --- GAM je Land laufen lassen ------------------------------------------------
 mortality_data_clean <- excess_dat %>%
   dplyr::mutate(Day = as.Date(Day)) %>%
   dplyr::group_by(Entity) %>%
-  dplyr::group_modify(~ est_excess_oldmodel(.x, TARGET_DATE)) %>%
+  dplyr::group_modify(~ est_excess_oldform_indexfree(.x, TARGET_DATE)) %>%
   dplyr::ungroup() %>%
   dplyr::mutate(iso3c = map_iso3(Entity)) %>%
-  dplyr::filter(!is.na(iso3c)) %>%
-  dplyr::rename(cum_excess_per_million_proj_all_ages = value)
+  dplyr::filter(!is.na(iso3c), !is.na(value)) %>%
+  dplyr::transmute(
+    iso3c,
+    cum_excess_per_million_proj_all_ages = value
+  )
 
-# --- Final Join ---
+# --- Finaler Join -------------------------------------------------------------
 dat <- age %>%
   dplyr::transmute(iso3c, median_age) %>%
   dplyr::full_join(
@@ -103,7 +101,7 @@ dat <- age %>%
   ) %>%
   dplyr::full_join(
     mortality_data_clean %>%
-      dplyr::select(iso3c, excess_mort = cum_excess_per_million_proj_all_ages),
+      dplyr::transmute(iso3c, excess_mort = cum_excess_per_million_proj_all_ages),
     by = "iso3c"
   ) %>%
   dplyr::full_join(
@@ -117,14 +115,21 @@ dat <- age %>%
     by = "iso3c"
   )
 
-
-# --- Output -------------------------
+# --- Outputs -----------------------------------------------------------------
 out_dir <- here::here("ready_to_import", "data_manipulated")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
-readr::write_csv(dat, file = file.path(out_dir, "analysis_table.csv"))
+readr::write_csv(
+  mortality_data_clean,
+  file = file.path(out_dir, "mortality_gam_2023-05-05.csv")
+)
+readr::write_csv(
+  dat,
+  file = file.path(out_dir, "analysis_table.csv")
+)
 
 message(
-  "[02_clean| rows(dat)=", nrow(dat),
-  " | iso3c=", dplyr::n_distinct(dat$iso3c, na.rm = TRUE) # ohne NA ! vergleichen
+  "[02_clean] rows(dat)=", nrow(dat),
+  " | iso3c=", dplyr::n_distinct(dat$iso3c, na.rm = TRUE),
+  " | mortality rows=", nrow(mortality_data_clean)
 )

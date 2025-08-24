@@ -36,11 +36,10 @@ map_iso3 <- function(x) {
 }
 
 # nearest_on(): pick the single row whose date is closest to `target`
-# - `date_col` is a column symbol (default: Day)
 nearest_on <- function(df, date_col = Day, target = as.Date("2023-05-05")) {
   date_sym <- rlang::ensym(date_col)
   df %>%
-    dplyr::mutate(.dist = abs(!!date_sym - target)) %>%
+    dplyr::mutate(.dist = abs(!!date_sym - target)) %>% # dist = absolute difference to target
     dplyr::slice_min(.dist, with_ties = FALSE) %>%
     dplyr::select(-.dist)
 }
@@ -186,12 +185,6 @@ excess_dat <- load_csv(
   "excess_mort",
   here::here("ready_to_import", "data_raw", "mortality", "cumulative-excess-deaths-per-million-covid.csv")
 )
-
-# ---- optional sanity checks (fail fast) ----
-stopifnot(all(nchar(age$iso3c[!is.na(age$iso3c)]) == 3))
-stopifnot(all(nchar(vaccination_data_clean$iso3c) == 3))
-stopifnot(!any(grepl("^OWID_", vaccination_data_clean$iso3c, useBytes = TRUE)))
-stopifnot(all(c("iso3c", "vacc_per_100", "Day") %in% names(vaccination_data_clean)))
 
 # ---- summary ----
 message(

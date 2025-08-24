@@ -1,70 +1,77 @@
-# Kurznotiz: Pipeline-Stand
+# Pipeline-Stand (Kurznotiz)
 
 ## 1) Daten-Auditing
 
-* Quellen & Lizenzen in **`DATA_SOURCES.md`**; in **`ready_to_import/data_raw/**`** liegen **LICENSES** pro Datensatz.
-* **“Last synchronized” (per Git-Historie):**
+* Quellen & Lizenzen dokumentiert in **`DATA_SOURCES.md`**.
+* In **`ready_to_import/data_raw/**`** liegen zusätzlich **LICENSES**-Texte pro Datensatz.
+* **“Last synchronized”** (Repo-Zeitstempel, siehe Git-Historie; nicht die Updatezeiten der Anbieter):
+
   * Median age (UN WPP via OWID): **2025-03-20**
   * GDP per capita (World Bank): **2024-12-09**
   * UHC service coverage index (WHO via WB): **2024-12-09**
   * Excess mortality (HMD/WMD via OWID): **2025-04-06**
   * Vaccination doses (OWID/WHO): **2025-03-21**
-    *Hinweis:* Repo-Zeitstempel der Kopien, **nicht** die Updatezeiten der Anbieter.
 
 ## 2) Library-Loader
 
-* **`ready_to_import/00_library_loader.R`**: lädt Packages, setzt `here()`, stellt gemeinsame Helper bereit.
+* **`ready_to_import/00_library_loader.R`**
+  Lädt benötigte R-Pakete, setzt `here()`, und stellt Helper-Funktionen (`map_iso3()`, `nearest_on()`) bereit.
 
 ## 3) `01_loader.R`
 
-* Lädt alle CSVs aus **`ready_to_import/data_raw/`**, vereinheitlicht ISO3 via `map_iso3()`.
-* **Impfvarianten (wichtiger Switch):**
-  * `vaccination_max` = letzter verfügbarer Tag (altes Verhalten)
-  * `vaccination_nearest` = **Datum am nächsten zu 2023-05-05** (Paper-konform, empfohlen)
-* Kurzvergleich (aktueller Lauf): **217** Länder; **119** mit geändertem Wert (*nearest ≠ max*); **97** gleicher Tag.
-  **Top-Abweichungen (Dosen/100):** TKM −51.7, JPN −39.7, DJI −29.1, ESP −28.1, TUN −27.3.
-* Artefakte abgelegt:
-  * `data_manipulated/vaccination/vaccination_max.csv`
-  * `data_manipulated/vaccination/vaccination_nearest.csv`
-  * Vergleich: `scripts/schnell_vergleich.R` → `data_manipulated/vaccination/vaccination_compare_short.csv` oder Data > `cmp`
-* Auswahl per **`VAX_SELECTION <- "nearest"`** (empfohlen) oder `"max"`.
+* Lädt alle Roh-CSV-Dateien aus **`ready_to_import/data_raw/`**.
+* Vereinheitlicht ISO3-Codes via `map_iso3()` (inkl. manueller Sonderfälle).
+
+**Impfvarianten (zentraler Switch):**
+
+* `vaccination_max` = letzter verfügbarer Tag (historisches Verhalten).
+* `vaccination_nearest` = Datum am nächsten zu **2023-05-05** (Paper-konform nach WHO/OWID-Empfehlung).
+
+**Vergleichsergebnisse (aktueller Lauf):**
+
+* **217** Länder, davon **119** mit geänderten Werten (*nearest ≠ max*), **97** unverändert.
+* Größte Abweichungen (Dosen/100): Turkmenistan −51.7, Japan −39.7, Dschibuti −29.1, Spanien −28.1, Tunesien −27.3.
+
+**Artefakte:**
+
+* `data_manipulated/vaccination/vaccination_max.csv`
+* `data_manipulated/vaccination/vaccination_nearest.csv`
+* Vergleich: `scripts/schnell_vergleich.R` → `vaccination_compare_short.csv`.
+
+**Hinweis zu Stabilität:**
+*Mit `nearest` können Länder mit wenigen Beobachtungspunkten früher im Zeitverlauf auftreten > GAM-Fits (in `02_clean.R`) können dort `k`-Warnungen oder Fehler auslösen. Bei `max` tritt das i. d. R. nicht auf, da mehr Datenpunkte bis zum letzten Beobachtungstag vorhanden sind.*
+
+**Downstream-Auswahl im Environment:**
+Per **`VAX_SELECTION <- "nearest"`** (empfohlen) oder `"max"`.
 
 ## 4) `02_clean.R`
 
-* **Excess Mortality** am **2023-05-05** via *altem* GAM **1:1** beibehalten.
-* Output-Join: `data_manipulated/analysis_table.csv`
-  Spalten: `iso3c, median_age, gdp, uhc, vacc, vax_day, excess_mort`.
-* **Bekannte Stolpersteine (dokumentiert im Skript-Header):**
-  * **Extrapolation** möglich, wenn 05-05-2023 außerhalb der Reihe liegt.
-  * **Index-Abgriff** via `(Zieldatum − min(Day))` -> Off-by-one-Risiko bei Lücken/Zeitzonen.
-  * **GCV-Default** in `mgcv::gam()` kann bei kurzen/rauschigen Reihen “wiggly” Fits erzeugen.
-  * **Kumulativdaten** können durch Glättung leicht nicht-monoton werden; wir entnehmen nur den Stichtagswert.
+* Ziel: **Excess Mortality** am **2023-05-05** pro Land mittels GAM schätzen.
+* VORSICHT! Modell entspricht der ursprünglichen Form (`mgcv::gam(y ~ s(x, bs="cs"))`, GCV-Default) – aber **indexfreie Vorhersage** (direkt am Datum).
+* Fallback: Wenn das Ziel-Datum außerhalb des Beobachtungszeitraums liegt, wird der nächstliegende beobachtete Wert genommen.
+
+**Outputs:**
+
+* `data_manipulated/mortality_gam_2023-05-05.csv`
+* `data_manipulated/analysis_table.csv` (Join: `iso3c, median_age, gdp, uhc, vacc, vax_day, excess_mort`).
+
+**Dokumentierte Stolpersteine:**
+
+* **Extrapolation:** Falls 05-05-2023 nicht im Beobachtungszeitraum → Fallback auf nächstliegendes Datum (statt NA).
+* **Indexierung (alt):** Ursprünglich wurde `(Zieldatum − min(Day))` als Index genutzt > *Off-by-one*-Risiko bei fehlenden Tagen/Zeitzonen.
+* Siehe: [https://en.wikipedia.org/wiki/Off-by-one_error](https://en.wikipedia.org/wiki/Off-by-one_error) > Muss man wissen.
+
+* **mgcv::gam() Default:** Ohne `method="REML"` wird Generalized Cross Validation (GCV) genutzt > bei kurzen/rauschigen Reihen können wiggly Fits entstehen ([mgcv Doku](https://cran.r-project.org/package=mgcv)).
+* **Kumulativdaten:** Glättung kann lokal zu leichten Nicht-Monotonien führen; da nur ein Stichtagswert extrahiert wird, tolerierbar.
 
 ## 5) `03_analysis.R`
 
-* **Paarweise Korrelationen** (Pearson/Spearman) inkl. NA-Zeilenverlust-Stats.
-
-  * Aktueller Lauf: **n_total = 242**, **Complete cases = 80** Länder.
-  * Ergebnisse:
-    * `gdp ~ median_age`: *r* = **0.666**, ρ = **0.855** (n = 180)
-    * `gdp ~ uhc`: *r* = **0.717**, ρ = **0.898** (n = 177)
-    * `vacc ~ excess_mort`: *r* = **−0.443**, ρ = **−0.470** (n = 88)
-* Artefakte:
-  * `data_manipulated/analysis_correlations.csv`
-  * `data_manipulated/analysis_complete_cases.csv` (Complete-Case-Tabelle inkl. Kontinent)
+* ToDo: Zusammenführung, Korrelations-Tabellen, Teilergebnisse. Sollte nicht vom Original abweichen.
 
 ## Offene Punkte / Nächste Schritte
 
-1. **Korrelations-Matrix (Fig):** Heatmap/Viz der Pearson-Koeffizienten mit *n*-Annot.
-2. **Partielle Korrelationen:** z. B. `excess_mort ~ vacc | (gdp, median_age, uhc)`; sauber loggen, welche Länder im Modell landen.
-3. **Median-Split / konditionierte Korr.:** 
-4. **“Fig Nexus” anfügen:** kleines Panel-Bild in README oder `04_plots.R`.
-5. **Map “available data”:** Choropleth der Complete-Cases (80/242) plus Coverage pro Variable.
-6. **run_all.sh**: Shell-Skript, das alle Schritte in der richtigen Reihenfolge ausführt noch schreiben.
-
-## Reproduzierbarkeit soweit
-
-1. `01_loader.R`
-2. `02_clean.R` → schreibt `analysis_table.csv`
-3. `03_analysis.R` → schreibt `analysis_correlations.csv` & `analysis_complete_cases.csv`
-*(Optional)* `schnell_vergleich.R` für Delta - Vacc vergleich max() vs nearest.
+1. **`03_analysis.R`** fertigstellen (Bivariate + Partial Correlations, Tabellen).
+2. **Korrelations-Matrix (Fig):** Heatmap mit Pearson-Koeffizienten und *n*.
+3. **“Fig Nexus”**: kleines Panel-Bild in README oder eigenes `04_plots.R`.
+4. **Map “available data”**: Choropleth der Complete-Cases (\~79 Länder) + Coverage pro Variable.
+5. **`run_all.sh`**: Shell-Skript zum Reproduzieren der Pipeline (01 → 02 → 03 …).

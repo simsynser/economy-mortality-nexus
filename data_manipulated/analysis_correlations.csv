@@ -1,7 +1,0 @@
-xvar,yvar,n_total,lost_count_na,n_used,pearson,spearman,message
-gdp,median_age,229,49,180,0.666,0.855,OK
-gdp,vacc,229,44,185,0.598,0.66,OK
-gdp,uhc,229,52,177,0.717,0.898,OK
-median_age,excess_mort,229,141,88,0.255,0.26,OK
-vacc,excess_mort,229,140,89,-0.442,-0.465,OK
-uhc,excess_mort,229,148,81,-0.307,-0.306,OK
