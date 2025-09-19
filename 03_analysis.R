@@ -1,5 +1,13 @@
-# 03_analysis.R — Correlation
-# ------------------------------------------------------------
+# 03_analysis.R — Correlation Analysis & Complete Cases Assessment
+# -------------------------------------------------------------------------
+# Purpose: Analyze pairwise correlations between key COVID-19 related variables
+# and identify countries with complete data for downstream analysis
+#
+# Inputs:  analysis_table.csv (from 02_clean.R)
+# Outputs: analysis_correlations.csv, analysis_complete_cases.csv
+# -------------------------------------------------------------------------
+
+# ---- Setup & Data Loading ------------------------------------------------
 in_file <- here::here("ready_to_import", "data_manipulated", "analysis_table.csv")
 out_dir <- here::here("ready_to_import", "data_manipulated")
 plot_dir <- out_dir
@@ -10,25 +18,28 @@ dir.create(plot_dir, recursive = TRUE, showWarnings = FALSE)
 
 dat <- readr::read_csv(in_file, show_col_types = FALSE)
 
+# Validate required columns are present
 required_cols <- c("iso3c", "median_age", "gdp", "uhc", "vacc", "excess_mort")
 missing_cols <- setdiff(required_cols, names(dat))
 if (length(missing_cols)) {
   stop("analysis_table.csv fehlt Spalten: ", paste(missing_cols, collapse = ", "))
 }
 
-# ---- Helper: Correlation + NA Count --------------------------------------
+# ---- Helper: Pairwise Correlation with Missing Data Transparency ---------
+# This function computes correlations while explicitly tracking data loss due to NAs
+# Returns both Pearson (assumes normality) and Spearman (rank-based, robust)
 calc_cor_and_lost <- function(df, xvar, yvar) {
   total_count <- nrow(df)
 
-  # Subset of those two variables
+  # Extract only the two variables of interest
   df_sub <- df[, c(xvar, yvar)]
-  # Pairwise drop NA
-  df_sub_complete <- df_sub[complete.cases(df_sub), ]
 
+  # Pairwise complete case deletion (standard for correlation analysis)
+  df_sub_complete <- df_sub[complete.cases(df_sub), ]
   complete_count <- nrow(df_sub_complete)
   lost_count_na <- total_count - complete_count
 
-  # When <2 complete points, cor() fails
+  # Correlation requires at least 2 complete observations
   if (complete_count < 2) {
     return(list(
       xvar = xvar,
@@ -42,7 +53,7 @@ calc_cor_and_lost <- function(df, xvar, yvar) {
     ))
   }
 
-  # Compute Pearson & Spearman
+  # Compute both parametric and non-parametric correlations
   pearson <- cor(df_sub_complete[[xvar]], df_sub_complete[[yvar]], method = "pearson")
   spearman <- cor(df_sub_complete[[xvar]], df_sub_complete[[yvar]], method = "spearman")
 
@@ -58,35 +69,41 @@ calc_cor_and_lost <- function(df, xvar, yvar) {
   )
 }
 
-
+# ---- Define Variable Pairs for Analysis -----------------------------------
+# Focus on theoretically meaningful relationships:
+# - Development indicators (GDP) vs. health infrastructure (UHC) & demographics (age)
+# - Pandemic response capacity (vaccination) vs. development
+# - Health outcomes (excess mortality) vs. protective factors (age, vaccination, UHC)
 pairs <- list(
-  c("gdp", "median_age"),
-  c("gdp", "vacc"),
-  c("gdp", "uhc"),
-  c("median_age", "excess_mort"),
-  c("vacc", "excess_mort"),
-  c("uhc", "excess_mort")
+  c("gdp", "median_age"), # Development-demographics relationship
+  c("gdp", "vacc"), # Economic capacity-vaccination rollout
+  c("gdp", "uhc"), # Economic development-health system strength
+  c("median_age", "excess_mort"), # Demographic vulnerability-mortality outcomes
+  c("vacc", "excess_mort"), # Vaccination coverage-mortality protection
+  c("uhc", "excess_mort") # Health system strength-mortality outcomes
 )
 
-# ---- Calc and Console Output --------------------------------------
+# ---- Execute Pairwise Correlation Analysis --------------------------------
 results_list <- lapply(pairs, function(vars) {
   xvar <- vars[1]
   yvar <- vars[2]
 
   res <- calc_cor_and_lost(dat, xvar, yvar)
 
+  # Console output for immediate feedback during analysis
   cat("\n========================================\n")
   cat("Correlating", res$xvar, "vs.", res$yvar, "\n")
   cat("Total rows in dataset:", res$n_total, "\n")
   cat("Lost rows (NA):", res$lost_count_na, "\n")
   cat("Rows used for correlation:", res$n_used, "\n")
-  cat("Pearson’s r:", res$pearson, "\n")
-  cat("Spearman’s rho:", res$spearman, "\n")
+  cat("Pearson's r:", res$pearson, "\n")
+  cat("Spearman's rho:", res$spearman, "\n")
   cat("Message:", res$message, "\n")
 
   res
 })
 
+# Convert list to data frame for export and further analysis
 results_df <- do.call(
   rbind,
   lapply(results_list, function(x) {
@@ -107,7 +124,9 @@ results_df <- do.call(
 print(results_df)
 readr::write_csv(results_df, file.path(out_dir, "analysis_correlations.csv"))
 
-# ---- Complete Cases (for descriptive and map) ----------------------------------
+# ---- Complete Cases Analysis ---------------------------------------------
+# Identify countries with complete data across all key variables
+# These form the analytical sample for multivariate analysis
 df_complete_all <- dat %>%
   filter(
     !is.na(gdp),
@@ -118,8 +137,29 @@ df_complete_all <- dat %>%
   ) %>%
   mutate(continent = countrycode(iso3c, origin = "iso3c", destination = "continent"))
 
-# ---- Table of complete cases -----------------------------------------------
+message("Complete cases: ", nrow(df_complete_all), " countries out of ", nrow(dat), " total")
+
+# ---- Export Complete Cases Information -----------------------------------
+# Export country list for mapping/visualization purposes
 readr::write_csv(
-  df_complete_all %>% select(iso3c, continent),
+  df_complete_all %>% dplyr::select(iso3c, continent),
   file.path(out_dir, "analysis_complete_cases.csv")
 )
+
+# ---- Missing Data Summary ------------------------------------------------
+# Quick diagnostic of missing data patterns
+missing_counts <- c(
+  excess_mort = sum(is.na(dat$excess_mort)),
+  gdp = sum(is.na(dat$gdp)),
+  median_age = sum(is.na(dat$median_age)),
+  uhc = sum(is.na(dat$uhc)),
+  vacc = sum(is.na(dat$vacc))
+)
+
+message("Missing data by variable:")
+print(missing_counts)
+
+# Export full complete cases dataset for downstream analysis
+readr::write_csv(df_complete_all, file.path(out_dir, "df_complete_all_analysis.csv"))
+
+message("Analysis outputs written to: ", out_dir)
