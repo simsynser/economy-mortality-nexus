@@ -1,7 +1,7 @@
 required_pkgs <- c(
   "cocor", "corrplot", "countrycode", "cowplot",
   "ggpubr", "ggrepel", "mgcv", "naniar", "ppcor",
-  "rnaturalearth", "rnaturalearthdata", "tidyverse", "here"
+  "rnaturalearth", "rnaturalearthdata", "tidyverse", "here", "scales"
 )
 
 install_if_missing <- function(pkgs, repos = getOption("repos")[["CRAN"]] %||% "https://cloud.r-project.org") {
