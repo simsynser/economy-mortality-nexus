@@ -76,3 +76,27 @@ Per **`VAX_SELECTION <- "nearest"`** oder `"max"` zur Kontrolle hinzugefügt.
 3. **Map "available data"**: Choropleth der Complete-Cases (**101 Länder**) + Coverage pro Variable.
 4. **`run_all.sh`**: Shell-Skript zum Reproduzieren der Pipeline (01 → 02 → 03 …).
 5. **Methodenvergleich:** Optional könnte man original vs. neue GAM-Schätzungen für überlappende Länder direkt vergleichen (aber niedrige Priorität).
+
+Next:
+
+1. Basic Scatter Plot Matrix (04b_plots_scatter.R)
+
+The 6 individual plots (plot1-plot6) and their 2x3 grid
+This is the cleanest, most self-contained piece
+Uses the calc_cor() helper function
+
+2. Correlation Heatmap (04a_plots_correlations.R)
+
+The corrplot() at the bottom with Pearson correlations
+The correlation matrix calculation (M_r, M_r_p)
+
+More Complex (tackle later):
+3. Coverage Map (04c_plots_maps.R)
+
+The final map showing complete cases (101 countries)
+Should be much simpler than the complex subgroup mapping
+
+4. Subgroup Analysis (04d_plots_subgroup.R)
+
+The complex generate_plot_row() functions with maps + correlations
+All the age/UHC splitting logic
