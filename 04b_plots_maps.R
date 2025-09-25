@@ -163,8 +163,8 @@ readr::write_csv(country_list, file.path(out_dir, "complete_cases_country_list.c
 
 # ---- Console Summary ----
 message("Coverage maps saved:")
-message("  - Clean version: ", file.path(out_dir, "coverage_map_clean.png"))
-message("  - Detailed version: ", file.path(out_dir, "coverage_map_detailed.png"))
+message(" - Clean version: ", file.path(out_dir, "coverage_map_clean.png"))
+message(" - Detailed version: ", file.path(out_dir, "coverage_map_detailed.png"))
 message(
   "Coverage improved from 79 to ", nrow(df_complete_all), " countries (+",
   nrow(df_complete_all) - 79, " countries)"

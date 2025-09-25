@@ -74,13 +74,13 @@ est_excess_oldform_indexfree <- function(df, target = TARGET_DATE) {
 
   # Fallback 2: GAM fitting failed
   if (inherits(fit, "try-error")) {
-    near <- df %>% dplyr::slice_min(abs(Day - target), with_ties = FALSE)
+    near <- df %>% dplyr::slice_min(abs(Day - target), with_ties = FALSE) # Nearest observed
     return(tibble::tibble(value = near$y))
   }
 
   # Successful GAM: Check if target date is within observed range
   if (target >= min(df$Day) && target <= max(df$Day)) {
-    # Index-free prediction eliminates calculation errors from original approach
+    # Index-free prediction eliminates calculation errors from original approach ~
     pred <- mgcv::predict.gam(fit, newdata = data.frame(x = as.numeric(target)))
     return(tibble::tibble(value = as.numeric(pred)))
   } else {

@@ -8,6 +8,8 @@
 # -------------------------------------------------------------------------
 
 # ---- Setup & Data Loading ------------------------------------------------
+source(here::here("ready_to_import", "00_library_loader.R"))
+
 in_file <- here::here("ready_to_import", "data_manipulated", "analysis_table.csv")
 out_dir <- here::here("ready_to_import", "data_manipulated")
 plot_dir <- out_dir
@@ -27,7 +29,7 @@ if (length(missing_cols)) {
 
 # ---- Helper: Pairwise Correlation with Missing Data Transparency ---------
 # This function computes correlations while explicitly tracking data loss due to NAs
-# Returns both Pearson (assumes normality) and Spearman (rank-based, robust)
+# Returns both Pearson (assumes normality) and Spearman (rank-based)
 calc_cor_and_lost <- function(df, xvar, yvar) {
   total_count <- nrow(df)
 
