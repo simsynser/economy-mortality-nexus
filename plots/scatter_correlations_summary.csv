@@ -1,0 +1,7 @@
+relationship,correlation_label
+GDP-Age,"r = 0.451, ρ = 0.616, n = 101"
+GDP-Vaccination,"r = 0.516, ρ = 0.568, n = 101"
+GDP-UHC,"r = 0.659, ρ = 0.798, n = 101"
+Age-Mortality,"r = 0.274, ρ = 0.266, n = 101"
+Vaccination-Mortality,"r = -0.407, ρ = -0.394, n = 101"
+UHC-Mortality,"r = -0.187, ρ = -0.181, n = 101"

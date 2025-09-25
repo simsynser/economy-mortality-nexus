@@ -1,0 +1,7 @@
+Analysis_Group,Age_on_Mortality,UHC_on_Mortality,Vacc_on_Mortality
+UHC<=79 (n=41),0.597*/0.567*,,
+UHC>79 (n=38),0.165/0.255,,
+Age<=38 (n=40),,-0.249/-0.212,
+Age>38 (n=39),,-0.724*/-0.636*,
+Age<=38 (n=40),,,-0.426*/-0.425*
+Age>38 (n=39),,,-0.762*/-0.738*

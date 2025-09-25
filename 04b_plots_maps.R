@@ -1,12 +1,12 @@
 # 04b_plots_maps.R — Coverage Map (Figure 2 from Paper)
 # ============================================================================
 # Purpose: Figure 2 - Map showing countries with complete records
-#          for COVID-19 analysis with improved sample size
+#          for COVID-19 analysis with GAM-only methodology (n=79)
 #
 # Dependencies: df_complete_all_analysis.csv (from 03_analysis.R)
 # Outputs: coverage_map_clean.png, coverage_map_detailed.png, coverage_summary.csv
 #
-# Paper Reference: Figure 2. Dark color highlights 101 countries with complete data
+# Paper Reference: Figure 2. Countries with complete GAM-estimated mortality data
 # ============================================================================
 
 source(here::here("ready_to_import", "00_library_loader.R"))
@@ -90,11 +90,8 @@ coverage_map_detailed <- ggplot(data = map_data) +
   ) +
   labs(
     title = paste0("Countries with Complete COVID-19 Data Records (n=", nrow(df_complete_all), ")"),
-    subtitle = paste0(
-      "Complete records for GDP, population age, vaccination, UHC coverage, and excess mortality\n",
-      "Improvement from paper: ", nrow(df_complete_all), " countries vs. original 79 countries"
-    ),
-    caption = paste0("Data sources: World Bank, UN, WHO, OWID | Analysis period: 2020-2023")
+    subtitle = "Complete records for GDP, population age, vaccination, UHC coverage, and GAM-estimated mortality",
+    caption = "Data sources: World Bank, UN, WHO, OWID | GAM-only methodology for temporal standardization"
   )
 
 # ---- Export Both Map Versions ----
@@ -118,29 +115,6 @@ continent_summary <- df_complete_all %>%
   ) %>%
   arrange(desc(countries))
 
-# Add comparison with paper
-coverage_comparison <- data.frame(
-  metric = c(
-    "Total countries with complete data",
-    "European countries",
-    "Asian countries",
-    "American countries",
-    "African countries",
-    "Oceania countries",
-    "Improvement over paper"
-  ),
-  current_study = c(
-    nrow(df_complete_all),
-    sum(df_complete_all$continent == "Europe", na.rm = TRUE),
-    sum(df_complete_all$continent == "Asia", na.rm = TRUE),
-    sum(df_complete_all$continent == "Americas", na.rm = TRUE),
-    sum(df_complete_all$continent == "Africa", na.rm = TRUE),
-    sum(df_complete_all$continent == "Oceania", na.rm = TRUE),
-    nrow(df_complete_all) - 79
-  ),
-  paper_original = c(79, 37, 21, 13, 6, 2, 0)
-)
-
 # Calculate missing countries that couldn't be matched
 unmatched_countries <- setdiff(df_complete_all$iso3c, world$iso_a3)
 if (length(unmatched_countries) > 0) {
@@ -152,7 +126,6 @@ if (length(unmatched_countries) > 0) {
 
 # ---- Export Summary Data ----
 readr::write_csv(continent_summary, file.path(out_dir, "coverage_by_continent.csv"))
-readr::write_csv(coverage_comparison, file.path(out_dir, "coverage_comparison.csv"))
 
 # Export list of all complete case countries
 country_list <- df_complete_all %>%
@@ -163,27 +136,17 @@ readr::write_csv(country_list, file.path(out_dir, "complete_cases_country_list.c
 
 # ---- Console Summary ----
 message("Coverage maps saved:")
-message(" - Clean version: ", file.path(out_dir, "coverage_map_clean.png"))
-message(" - Detailed version: ", file.path(out_dir, "coverage_map_detailed.png"))
-message(
-  "Coverage improved from 79 to ", nrow(df_complete_all), " countries (+",
-  nrow(df_complete_all) - 79, " countries)"
-)
+message("  - Clean version: ", file.path(out_dir, "coverage_map_clean.png"))
+message("  - Detailed version: ", file.path(out_dir, "coverage_map_detailed.png"))
+message("Methodological approach: GAM-only analysis with n=", nrow(df_complete_all), " countries")
 
 cat("\n=== Continental Distribution ===\n")
 print(continent_summary)
-
-cat("\n=== Comparison with Original Paper ===\n")
-print(coverage_comparison)
-
-# ---- Country Count Verification ----
-cat("\n=== Country Count Verification ===\n")
-cat("Complete cases dataset countries:", nrow(df_complete_all), "\n")
-cat("Countries mapped successfully:", sum(df_complete_all$iso3c %in% world$iso_a3), "\n")
-cat("Countries with complete data (verification):", sum(map_data$has_complete_data, na.rm = TRUE), "\n")
 
 if (length(unmatched_countries) == 0) {
   message("All countries successfully mapped to world geography")
 } else {
   message("Countries with mapping issues: ", length(unmatched_countries))
 }
+
+message("Coverage map analysis complete!")

@@ -1,34 +1,31 @@
-# 02_clean.R — Excess Mortality Estimation & Dataset Integration
+# 02_clean.R — Excess Mortality Estimation & Dataset Integration (GAM-Only)
 # ============================================================================
 # Purpose: Estimate country-level excess mortality at standardized date (2023-05-05)
-#          and integrate with demographic, economic, and health system indicators
+#          using GAM modeling only, ensuring methodological consistency
 #
-# Key Improvements Over Original Approach:
-# ----------------------------------------
-# 1. ROBUST GAM ESTIMATION: Enhanced error handling prevents pipeline failures
-#    - Fallback to nearest observed value for countries with insufficient data
-#    - Dynamic k parameter prevents GAM fitting errors
-#    - Index-free prediction eliminates off-by-one date calculation errors
+# Methodological Decision: GAM-Only Analysis
+# - Only countries with successful GAM fitting are included
+# - Countries with insufficient data or GAM fitting failures are excluded
+# - Ensures all mortality estimates use identical smoothing methodology
+# - Prioritizes methodological rigor over sample size maximization
 #
-# 2. INCREASED COUNTRY COVERAGE: ~31 additional countries successfully processed
-#    - Countries with short time series: Use nearest observed instead of failing
-#    - Countries with GAM numerical issues: Graceful fallback vs. crash
-#    - Countries with extrapolation needs: Safe handling vs. index errors
-#
-# 3. METHODOLOGICAL CONSISTENCY: Same GAM form as original (y ~ s(x, bs="cs"))
-#    - Maintains comparability with previous results for successful countries
-#    - Improves data recovery without changing core modeling approach
+# Problems Solved from Original Approach:
+# - Pipeline crashes when GAM fitting fails (robust error handling)
+# - Index calculation errors: fit[as.Date("2023-05-05") - min(Day)] prone to off-by-one bugs
+# - Inconsistent estimation methods mixing GAM predictions with raw observations
 #
 # Dependencies (from 01_loader.R):
 # - Objects: age, gdp_data_clean, essential_health_data_clean,
 #            vaccination_data_clean, excess_dat
 #
 # Outputs:
-# - mortality_gam_2023-05-05.csv: Country-level excess mortality estimates
+# - mortality_gam_2023-05-05.csv: Country-level excess mortality estimates (GAM-only)
 # - analysis_table.csv: Integrated dataset for correlation analysis
+# - gam_processing_summary.csv: Processing results summary
 #
 # Methodological Notes:
-# - GCV smoothing (default) can produce wiggly fits for noisy short series
+# - Only uses cubic spline GAM estimates y ~ s(x, bs="cs")
+# - Countries requiring fallback methods are excluded for consistency
 # - Target date (2023-05-05) chosen per WHO/OWID temporal standardization guidelines
 # ============================================================================
 
@@ -43,10 +40,10 @@ stopifnot(
 
 TARGET_DATE <- as.Date("2023-05-05")
 
-# ---- Robust GAM Estimation Function -----------------------------------------
-# Estimates excess mortality at target date with multiple fallback strategies
-# to handle real-world data irregularities that caused original pipeline failures
-est_excess_oldform_indexfree <- function(df, target = TARGET_DATE) {
+# ---- GAM-Only Estimation Function -------------------------------------------
+# Estimates excess mortality using GAM only - returns NA for non-GAM cases
+# Ensures methodological consistency by excluding fallback methods
+est_excess_gam_only <- function(df, target = TARGET_DATE) {
   # Clean and prepare time series data
   df <- df %>%
     dplyr::filter(!is.na(Day), !is.na(cum_excess_per_million_proj_all_ages)) %>%
@@ -56,61 +53,74 @@ est_excess_oldform_indexfree <- function(df, target = TARGET_DATE) {
       y   = cum_excess_per_million_proj_all_ages
     )
 
-  # Handle countries with no valid data
+  # Insufficient data - exclude from analysis
   if (nrow(df) == 0) {
-    return(tibble::tibble(value = NA_real_))
+    return(tibble::tibble(value = NA_real_, method = "no_data"))
   }
 
-  # Fallback 1: Insufficient data for GAM fitting
+  # Insufficient unique time points for GAM - exclude from analysis
   n_uniq <- length(unique(df$x))
   if (n_uniq < 3L) {
-    near <- df %>% dplyr::slice_min(abs(Day - target), with_ties = FALSE)
-    return(tibble::tibble(value = near$y))
+    return(tibble::tibble(value = NA_real_, method = "insufficient_data"))
   }
 
-  # Attempt GAM fitting with dynamic k to prevent numerical issues
+  # Attempt GAM fitting with dynamic k parameter
   k_val <- max(3L, min(10L, n_uniq - 1L))
   fit <- try(mgcv::gam(y ~ s(x, bs = "cs", k = k_val), data = df), silent = TRUE)
 
-  # Fallback 2: GAM fitting failed
+  # GAM fitting failed - exclude from analysis
   if (inherits(fit, "try-error")) {
-    near <- df %>% dplyr::slice_min(abs(Day - target), with_ties = FALSE) # Nearest observed
-    return(tibble::tibble(value = near$y))
+    return(tibble::tibble(value = NA_real_, method = "gam_failed"))
   }
 
-  # Successful GAM: Check if target date is within observed range
-  if (target >= min(df$Day) && target <= max(df$Day)) {
-    # Index-free prediction eliminates calculation errors from original approach ~
-    pred <- mgcv::predict.gam(fit, newdata = data.frame(x = as.numeric(target)))
-    return(tibble::tibble(value = as.numeric(pred)))
-  } else {
-    # Fallback 3: Target outside observed range
-    # Original index calculation would often fail; use nearest observed
-    near <- df %>% dplyr::slice_min(abs(Day - target), with_ties = FALSE)
-    return(tibble::tibble(value = near$y))
+  # Target date outside observed range - exclude from analysis
+  # (avoids extrapolation beyond data support)
+  if (target < min(df$Day) || target > max(df$Day)) {
+    return(tibble::tibble(value = NA_real_, method = "outside_range"))
   }
+
+  # Successful GAM prediction within observed range
+  pred <- mgcv::predict.gam(fit, newdata = data.frame(x = as.numeric(target)))
+  return(tibble::tibble(value = as.numeric(pred), method = "gam_success"))
 }
 
-# ---- Process Excess Mortality Data -------------------------------------------
-message("[02_clean] Processing excess mortality data with robust GAM estimation...")
+# ---- Process Excess Mortality Data (GAM-Only) -------------------------------
+message("[02_clean] Processing excess mortality data with GAM-only estimation...")
 
-mortality_data_clean <- excess_dat %>%
+# Apply GAM estimation to all countries and track processing results
+mortality_processing <- excess_dat %>%
   dplyr::mutate(Day = as.Date(Day)) %>%
   dplyr::group_by(Entity) %>%
-  dplyr::group_modify(~ est_excess_oldform_indexfree(.x, TARGET_DATE)) %>%
+  dplyr::group_modify(~ est_excess_gam_only(.x, TARGET_DATE)) %>%
   dplyr::ungroup() %>%
-  dplyr::mutate(iso3c = map_iso3(Entity)) %>%
-  dplyr::filter(!is.na(iso3c), !is.na(value)) %>%
+  dplyr::mutate(iso3c = map_iso3(Entity))
+
+# Summarize processing results for transparency
+processing_summary <- mortality_processing %>%
+  dplyr::count(method, name = "countries") %>%
+  dplyr::mutate(percentage = round(100 * countries / sum(countries), 1))
+
+message("[02_clean] GAM Processing Summary:")
+for (i in seq_len(nrow(processing_summary))) {
+  method <- processing_summary$method[i]
+  count <- processing_summary$countries[i]
+  pct <- processing_summary$percentage[i]
+  message("  - ", method, ": ", count, " countries (", pct, "%)")
+}
+
+# Keep only successful GAM estimates for analysis
+mortality_data_clean <- mortality_processing %>%
+  dplyr::filter(method == "gam_success", !is.na(iso3c), !is.na(value)) %>%
   dplyr::transmute(
     iso3c,
     cum_excess_per_million_proj_all_ages = value
   )
 
-message("[02_clean] Successfully processed ", nrow(mortality_data_clean), " countries for excess mortality")
+message("[02_clean] Successfully processed ", nrow(mortality_data_clean), " countries with GAM estimates")
 
 # ---- Integrate All Datasets --------------------------------------------------
 # Full joins preserve all available country data across datasets
-# Countries may have partial data (handled in analysis phase)
+# Only countries with GAM mortality estimates will have complete records
 dat <- age %>%
   dplyr::transmute(iso3c, median_age) %>%
   dplyr::full_join(
@@ -138,10 +148,16 @@ dat <- age %>%
 out_dir <- here::here("ready_to_import", "data_manipulated")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
-# Export mortality estimates for detailed inspection
+# Export GAM-only mortality estimates
 readr::write_csv(
   mortality_data_clean,
   file.path(out_dir, "mortality_gam_2023-05-05.csv")
+)
+
+# Export processing summary for transparency
+readr::write_csv(
+  processing_summary,
+  file.path(out_dir, "gam_processing_summary.csv")
 )
 
 # Export integrated analysis table
@@ -159,12 +175,23 @@ n_complete_cases <- dat %>%
   ) %>%
   nrow()
 
+gam_success_rate <- processing_summary %>%
+  dplyr::filter(method == "gam_success") %>%
+  dplyr::pull(percentage)
+
 message(
-  "[02_clean] Integration complete:",
-  "\n  - Total countries: ", n_countries_total,
-  "\n  - Complete cases: ", n_complete_cases, " (", round(100 * n_complete_cases / n_countries_total, 1), "%)",
-  "\n  - Mortality estimates: ", nrow(mortality_data_clean),
+  "[02_clean] GAM-only integration complete:",
+  "\n  - Countries with GAM estimates: ", nrow(mortality_data_clean),
+  "\n  - GAM success rate: ", gam_success_rate, "%",
+  "\n  - Total countries in dataset: ", n_countries_total,
+  "\n  - Complete cases (all variables): ", n_complete_cases, " (", round(100 * n_complete_cases / n_countries_total, 1), "%)",
   "\n  - Analysis table rows: ", nrow(dat)
 )
+
+# Comparison with mixed-method approach
+message("[02_clean] Methodological trade-off:")
+message("  - GAM-only approach: Ensures methodological consistency")
+message("  - Cost: Reduced sample size vs mixed-method approach")
+message("  - Benefit: All mortality estimates use identical cubic spline GAM methodology")
 
 message("[02_clean] Ready for 03_analysis.R processing")
