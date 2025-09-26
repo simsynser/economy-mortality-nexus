@@ -13,7 +13,7 @@ source(here::here("ready_to_import", "00_library_loader.R"))
 
 # ---- Data Loading & Validation ----
 complete_cases_file <- here::here("ready_to_import", "data_manipulated", "df_complete_all_analysis.csv")
-out_dir <- here::here("ready_to_import", "plots")
+out_dir <- here::here("ready_to_import", "outputs")
 
 stopifnot(file.exists(complete_cases_file))
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
@@ -136,8 +136,8 @@ readr::write_csv(country_list, file.path(out_dir, "complete_cases_country_list.c
 
 # ---- Console Summary ----
 message("Coverage maps saved:")
-message("  - Clean version: ", file.path(out_dir, "coverage_map_clean.png"))
-message("  - Detailed version: ", file.path(out_dir, "coverage_map_detailed.png"))
+message(" - Clean version: ", file.path(out_dir, "coverage_map_clean.png"))
+message(" - Detailed version: ", file.path(out_dir, "coverage_map_detailed.png"))
 message("Methodological approach: GAM-only analysis with n=", nrow(df_complete_all), " countries")
 
 cat("\n=== Continental Distribution ===\n")

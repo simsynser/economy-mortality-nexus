@@ -12,11 +12,9 @@ source(here::here("ready_to_import", "00_library_loader.R"))
 
 in_file <- here::here("ready_to_import", "data_manipulated", "analysis_table.csv")
 out_dir <- here::here("ready_to_import", "data_manipulated")
-plot_dir <- out_dir
 
 stopifnot(file.exists(in_file))
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-dir.create(plot_dir, recursive = TRUE, showWarnings = FALSE)
 
 dat <- readr::read_csv(in_file, show_col_types = FALSE)
 
@@ -24,7 +22,7 @@ dat <- readr::read_csv(in_file, show_col_types = FALSE)
 required_cols <- c("iso3c", "median_age", "gdp", "uhc", "vacc", "excess_mort")
 missing_cols <- setdiff(required_cols, names(dat))
 if (length(missing_cols)) {
-  stop("analysis_table.csv fehlt Spalten: ", paste(missing_cols, collapse = ", "))
+  stop("analysis_table.csv misses: ", paste(missing_cols, collapse = ", "))
 }
 
 # ---- Helper: Pairwise Correlation with Missing Data Transparency ---------

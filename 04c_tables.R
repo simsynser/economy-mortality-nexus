@@ -12,7 +12,7 @@ source(here::here("ready_to_import", "00_library_loader.R"))
 
 # ---- Data Loading & Validation ----
 complete_cases_file <- here::here("ready_to_import", "data_manipulated", "df_complete_all_analysis.csv")
-out_dir <- here::here("ready_to_import", "plots")
+out_dir <- here::here("ready_to_import", "outputs")
 
 stopifnot(file.exists(complete_cases_file))
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)

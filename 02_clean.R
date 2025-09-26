@@ -30,7 +30,6 @@
 # ============================================================================
 
 source(here::here("ready_to_import", "00_library_loader.R"))
-suppressPackageStartupMessages(library(mgcv))
 
 # Verify required objects from loader
 stopifnot(
@@ -187,11 +186,3 @@ message(
   "\n  - Complete cases (all variables): ", n_complete_cases, " (", round(100 * n_complete_cases / n_countries_total, 1), "%)",
   "\n  - Analysis table rows: ", nrow(dat)
 )
-
-# Comparison with mixed-method approach
-message("[02_clean] Methodological trade-off:")
-message("  - GAM-only approach: Ensures methodological consistency")
-message("  - Cost: Reduced sample size vs mixed-method approach")
-message("  - Benefit: All mortality estimates use identical cubic spline GAM methodology")
-
-message("[02_clean] Ready for 03_analysis.R processing")

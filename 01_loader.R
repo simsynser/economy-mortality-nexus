@@ -132,5 +132,3 @@ message(
   " | Vacc(nearest to ", VAX_TARGET_DATE, ")=", nrow(vaccination_data_clean),
   " | Excess(raw rows)=", nrow(excess_dat)
 )
-
-message("Pipeline ready for 02_clean.R processing")
