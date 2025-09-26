@@ -64,18 +64,3 @@ source("ready_to_import/04b_plots_maps.R")
 source("ready_to_import/04c_tables.R")
 source("ready_to_import/04d_partial_correlations.R")
 ```
-
-## Requirements
-
-```r
-required_pkgs <- c(
-  "tidyverse", "here", "countrycode", "mgcv", "ppcor",
-  "corrplot", "ggplot2", "rnaturalearth", "sf"
-)
-```
-
-## License
-
-Code: [license here]  
-Data: See individual dataset licenses in **[DATA_SOURCES.md](DATA_SOURCES.md)**
-
