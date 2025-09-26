@@ -21,8 +21,6 @@ dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 # Load complete cases dataset
 df_complete_all <- readr::read_csv(complete_cases_file, show_col_types = FALSE)
 
-message("Complete cases loaded: ", nrow(df_complete_all), " countries")
-
 # ---- Load World Map Data ----
 world <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
 
@@ -133,20 +131,3 @@ country_list <- df_complete_all %>%
   arrange(continent, iso3c)
 
 readr::write_csv(country_list, file.path(out_dir, "complete_cases_country_list.csv"))
-
-# ---- Console Summary ----
-message("Coverage maps saved:")
-message(" - Clean version: ", file.path(out_dir, "coverage_map_clean.png"))
-message(" - Detailed version: ", file.path(out_dir, "coverage_map_detailed.png"))
-message("Methodological approach: GAM-only analysis with n=", nrow(df_complete_all), " countries")
-
-cat("\n=== Continental Distribution ===\n")
-print(continent_summary)
-
-if (length(unmatched_countries) == 0) {
-  message("All countries successfully mapped to world geography")
-} else {
-  message("Countries with mapping issues: ", length(unmatched_countries))
-}
-
-message("Coverage map analysis complete!")

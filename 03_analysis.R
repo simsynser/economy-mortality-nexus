@@ -89,17 +89,6 @@ results_list <- lapply(pairs, function(vars) {
   yvar <- vars[2]
 
   res <- calc_cor_and_lost(dat, xvar, yvar)
-
-  # Console output for immediate feedback during analysis
-  cat("\n========================================\n")
-  cat("Correlating", res$xvar, "vs.", res$yvar, "\n")
-  cat("Total rows in dataset:", res$n_total, "\n")
-  cat("Lost rows (NA):", res$lost_count_na, "\n")
-  cat("Rows used for correlation:", res$n_used, "\n")
-  cat("Pearson's r:", res$pearson, "\n")
-  cat("Spearman's rho:", res$spearman, "\n")
-  cat("Message:", res$message, "\n")
-
   res
 })
 

@@ -120,13 +120,3 @@ key_correlations <- data.frame(
   )
 
 readr::write_csv(key_correlations, file.path(out_dir, "key_correlations_summary.csv"))
-
-# ---- Console Summary ----
-message("Correlation heatmap saved to: ", file.path(out_dir, "correlation_matrix_heatmap.png"))
-message("Sample size n=", nrow(df_complete_all))
-
-cat("\n=== Key Correlations ===\n")
-print(key_correlations)
-
-cat("\n=== Correlation Matrix ===\n")
-print(round(M_r, 3))

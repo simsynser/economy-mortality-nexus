@@ -65,21 +65,6 @@ source("ready_to_import/04c_tables.R")
 source("ready_to_import/04d_partial_correlations.R")
 ```
 
-## Outputs
-
-**Figures:**
-- `correlation_matrix_heatmap.png` - Pearson correlation matrix
-- `coverage_map_clean.png` - Countries with complete data
-
-**Tables:**
-- `table1_subgroup_correlations.csv` - Age/UHC interaction analysis
-- `table2_gdp_thresholds.csv` - Wealth paradox at different GDP levels
-- `partial_correlations_results.csv` - Suppression analysis
-
-**Data:**
-- `df_complete_all_analysis.csv` - Complete cases dataset (n=79)
-- `mortality_gam_2023-05-05.csv` - GAM mortality estimates (n=95)
-
 ## Requirements
 
 ```r

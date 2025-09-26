@@ -97,8 +97,6 @@ format_correlation_with_significance <- function(cor_val, p_val) {
 }
 
 # ---- Generate Table 1: Subgroup Correlation Analysis ----
-message("\n=== Creating Table 1: Subgroup Correlations ===")
-
 # UHC ≤ 79 vs UHC > 79: Age on Mortality
 age_mort_low_uhc <- calc_subgroup_correlation(
   df_complete_all %>% filter(uhc <= median_uhc_cutoff), # 79 is median UHC in dataset
@@ -132,7 +130,6 @@ vacc_mort_old <- calc_subgroup_correlation(
   "vacc", "excess_mort"
 )
 
-# Create Table 1 in exact paper format
 table1 <- data.frame(
   Analysis_Group = c(
     paste0("UHC<=", round(median_uhc_cutoff), " (n=", age_mort_low_uhc$n, ")"),
@@ -180,8 +177,6 @@ table1 <- data.frame(
 )
 
 # ---- Generate Table 2: GDP Threshold Analysis ----
-message("\n=== Creating Table 2: GDP Threshold Analysis ===")
-
 gdp_thresholds <- c(20000, 25000, 30000, 33000)
 table2_results <- list()
 
@@ -293,41 +288,3 @@ gdp_detailed <- do.call(rbind, lapply(names(table2_results), function(name) {
 }))
 
 readr::write_csv(gdp_detailed, file.path(out_dir, "table2_detailed_results.csv"))
-
-# ---- Console Output ----
-message("Tables saved:")
-message(" - Table 1: ", file.path(out_dir, "table1_subgroup_correlations.csv"))
-message(" - Table 2: ", file.path(out_dir, "table2_gdp_thresholds.csv"))
-message("GAM-only methodology with n=", nrow(df_complete_all), " countries")
-
-cat("\n=== TABLE 1: Subgroup Correlation Analysis ===\n")
-cat("Format: Pearson r/Spearman rho (* indicates p ≤ .01)\n\n")
-print(table1)
-
-cat("\n=== TABLE 2: GDP Threshold Analysis ===\n")
-cat("Format: correlation/sample size (* p≤.05, ** p≤.01)\n\n")
-print(table2)
-
-# ---- Table Verification ----
-cat("\n=== Table Verification ===\n")
-cat("Table 1 rows:", nrow(table1), "\n")
-cat("Table 2 rows:", nrow(table2), "\n")
-cat("Complete cases used:", nrow(df_complete_all), "\n")
-cat(
-  "Median cutoffs verified - Age:", round(median_age_cutoff, 1),
-  ", UHC:", round(median_uhc_cutoff, 1), "\n"
-)
-
-# Verifying subgroup sample sizes add up correctly
-total_young <- sum(df_complete_all$median_age <= median_age_cutoff)
-total_old <- sum(df_complete_all$median_age > median_age_cutoff)
-total_low_uhc <- sum(df_complete_all$uhc <= median_uhc_cutoff)
-total_high_uhc <- sum(df_complete_all$uhc > median_uhc_cutoff)
-
-cat("Subgroup verification:\n")
-cat("  Young countries (<=", round(median_age_cutoff, 1), "):", total_young, "\n")
-cat("  Old countries (>", round(median_age_cutoff, 1), "):", total_old, "\n")
-cat("  Low UHC countries (<=", round(median_uhc_cutoff, 1), "):", total_low_uhc, "\n")
-cat("  High UHC countries (>", round(median_uhc_cutoff, 1), "):", total_high_uhc, "\n")
-
-message("Table analysis complete!")
