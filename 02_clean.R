@@ -3,16 +3,10 @@
 # Purpose: Estimate country-level excess mortality at standardized date (2023-05-05)
 #          using GAM modeling only, ensuring methodological consistency
 #
-# Methodological Decision: GAM-Only Analysis
-# - Only countries with successful GAM fitting are included
-# - Countries with insufficient data or GAM fitting failures are excluded
-# - Ensures all mortality estimates use identical smoothing methodology
-# - Prioritizes methodological rigor over sample size maximization
-#
-# Problems Solved from Original Approach:
-# - Pipeline crashes when GAM fitting fails (robust error handling)
-# - Index calculation errors: fit[as.Date("2023-05-05") - min(Day)] prone to off-by-one bugs
-# - Inconsistent estimation methods mixing GAM predictions with raw observations
+# Methodological Improvements:
+# - Robust error handling prevents pipeline interruption when GAM fitting fails
+# - Direct date prediction eliminates indexing errors in temporal alignment
+# - Consistent GAM methodology ensures all estimates use identical smoothing approach
 #
 # Dependencies (from 01_loader.R):
 # - Objects: age, gdp_data_clean, essential_health_data_clean,
@@ -29,7 +23,7 @@
 # - Target date (2023-05-05) chosen per WHO/OWID temporal standardization guidelines
 # ============================================================================
 
-source(here::here("ready_to_import", "00_library_loader.R"))
+source(here::here("00_library_loader.R"))
 
 # Verify required objects from loader
 stopifnot(
@@ -144,7 +138,7 @@ dat <- age %>%
   )
 
 # ---- Export Results -----------------------------------------------------------
-out_dir <- here::here("ready_to_import", "data_manipulated")
+out_dir <- here::here("data_manipulated")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 # Export GAM-only mortality estimates
@@ -177,12 +171,3 @@ n_complete_cases <- dat %>%
 gam_success_rate <- processing_summary %>%
   dplyr::filter(method == "gam_success") %>%
   dplyr::pull(percentage)
-
-message(
-  "[02_clean] GAM-only integration complete:",
-  "\n  - Countries with GAM estimates: ", nrow(mortality_data_clean),
-  "\n  - GAM success rate: ", gam_success_rate, "%",
-  "\n  - Total countries in dataset: ", n_countries_total,
-  "\n  - Complete cases (all variables): ", n_complete_cases, " (", round(100 * n_complete_cases / n_countries_total, 1), "%)",
-  "\n  - Analysis table rows: ", nrow(dat)
-)

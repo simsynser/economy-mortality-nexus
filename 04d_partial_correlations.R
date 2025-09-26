@@ -9,19 +9,17 @@
 # Paper Reference: Section 3.2 - Main effects of mediator variables
 # ============================================================================
 
-source(here::here("ready_to_import", "00_library_loader.R"))
+source(here::here("00_library_loader.R"))
 
 # ---- Data Loading & Validation ----
-complete_cases_file <- here::here("ready_to_import", "data_manipulated", "df_complete_all_analysis.csv")
-out_dir <- here::here("ready_to_import", "outputs")
+complete_cases_file <- here::here("data_manipulated", "df_complete_all_analysis.csv")
+out_dir <- here::here("outputs")
 
 stopifnot(file.exists(complete_cases_file))
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 # Load complete cases dataset
 df_complete_all <- readr::read_csv(complete_cases_file, show_col_types = FALSE)
-
-message("Data loaded: ", nrow(df_complete_all), " complete cases for partial correlation analysis")
 
 # ---- Helper Function ----
 # Calculate both bivariate and partial correlations for comparison

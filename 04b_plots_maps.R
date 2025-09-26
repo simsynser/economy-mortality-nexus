@@ -4,16 +4,16 @@
 #          for COVID-19 analysis with GAM-only methodology (n=79)
 #
 # Dependencies: df_complete_all_analysis.csv (from 03_analysis.R)
-# Outputs: coverage_map_clean.png, coverage_map_detailed.png, coverage_summary.csv
+# Outputs: coverage_map_clean.png, coverage_map_detailed.png, coverage_by_continent.csv, complete_cases_country_list.csv
 #
 # Paper Reference: Figure 2. Countries with complete GAM-estimated mortality data
 # ============================================================================
 
-source(here::here("ready_to_import", "00_library_loader.R"))
+source(here::here("00_library_loader.R"))
 
 # ---- Data Loading & Validation ----
-complete_cases_file <- here::here("ready_to_import", "data_manipulated", "df_complete_all_analysis.csv")
-out_dir <- here::here("ready_to_import", "outputs")
+complete_cases_file <- here::here("data_manipulated", "df_complete_all_analysis.csv")
+out_dir <- here::here("outputs")
 
 stopifnot(file.exists(complete_cases_file))
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)

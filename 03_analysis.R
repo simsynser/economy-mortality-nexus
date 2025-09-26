@@ -4,14 +4,14 @@
 # and identify countries with complete data for downstream analysis
 #
 # Inputs:  analysis_table.csv (from 02_clean.R)
-# Outputs: analysis_correlations.csv, analysis_complete_cases.csv
+# Outputs: analysis_correlations.csv, analysis_complete_cases.csv, df_complete_all_analysis.csv
 # -------------------------------------------------------------------------
 
 # ---- Setup & Data Loading ------------------------------------------------
-source(here::here("ready_to_import", "00_library_loader.R"))
+source(here::here("00_library_loader.R"))
 
-in_file <- here::here("ready_to_import", "data_manipulated", "analysis_table.csv")
-out_dir <- here::here("ready_to_import", "data_manipulated")
+in_file <- here::here("data_manipulated", "analysis_table.csv")
+out_dir <- here::here("data_manipulated")
 
 stopifnot(file.exists(in_file))
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
@@ -126,8 +126,6 @@ df_complete_all <- dat %>%
   ) %>%
   mutate(continent = countrycode(iso3c, origin = "iso3c", destination = "continent"))
 
-message("Complete cases: ", nrow(df_complete_all), " countries out of ", nrow(dat), " total")
-
 # ---- Export Complete Cases Information -----------------------------------
 # Export country list for mapping/visualization purposes
 readr::write_csv(
@@ -145,10 +143,5 @@ missing_counts <- c(
   vacc = sum(is.na(dat$vacc))
 )
 
-message("Missing data by variable:")
-print(missing_counts)
-
 # Export full complete cases dataset for downstream analysis
 readr::write_csv(df_complete_all, file.path(out_dir, "df_complete_all_analysis.csv"))
-
-message("Analysis outputs written to: ", out_dir)

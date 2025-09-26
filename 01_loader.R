@@ -13,11 +13,11 @@
 # ============================================================================
 
 # ---- libraries ----
-source(here::here("ready_to_import", "00_library_loader.R"))
+source(here::here("00_library_loader.R"))
 
 # ---- folders ----
-dir.create(here::here("ready_to_import", "data_raw"), recursive = TRUE, showWarnings = FALSE)
-dir.create(here::here("ready_to_import", "data_manipulated"), recursive = TRUE, showWarnings = FALSE)
+dir.create(here::here("data_raw"), recursive = TRUE, showWarnings = FALSE)
+dir.create(here::here("data_manipulated"), recursive = TRUE, showWarnings = FALSE)
 
 # ---- helper functions ----
 # load_csv(): Wrapper with informative error messages and progress feedback
@@ -63,7 +63,7 @@ VAX_TARGET_DATE <- as.Date("2023-05-05") # WHO/OWID recommended reference point
 # Uses 2022 estimates as most recent complete demographic snapshot
 age <- load_csv(
   "age",
-  here::here("ready_to_import", "data_raw", "age", "age2022.csv")
+  here::here("data_raw", "age", "age2022.csv")
 ) %>%
   dplyr::rename(median_age = `Median age - Sex: all - Age: all - Variant: estimates`) %>%
   dplyr::mutate(iso3c = map_iso3(Entity))
@@ -74,7 +74,7 @@ age <- load_csv(
 # Year 2021: Most recent pre-pandemic baseline for health system capacity
 essential_health_data_clean <- load_csv(
   "uhc",
-  here::here("ready_to_import", "data_raw", "health", "healthcare-access-quality-un.csv")
+  here::here("data_raw", "health", "healthcare-access-quality-un.csv")
 ) %>%
   dplyr::filter(Year == 2021) %>%
   dplyr::mutate(iso3c = map_iso3(Entity)) %>%
@@ -86,7 +86,7 @@ essential_health_data_clean <- load_csv(
 # Year 2022: Latest complete economic data (pre-analysis period)
 gdp_data_clean <- load_csv(
   "gdp",
-  here::here("ready_to_import", "data_raw", "gdp", "gdp-per-capita-worldbank.csv")
+  here::here("data_raw", "gdp", "gdp-per-capita-worldbank.csv")
 ) %>%
   dplyr::filter(Year == 2022) %>%
   dplyr::mutate(iso3c = map_iso3(Entity)) %>%
@@ -98,7 +98,7 @@ gdp_data_clean <- load_csv(
 # Uses observations closest to 2023-05-05 for temporal standardization
 vaccination_data_clean <- load_csv(
   "vaccination",
-  here::here("ready_to_import", "data_raw", "vaccination", "covid-19-vaccine-doses-administered-per-100-people.csv")
+  here::here("data_raw", "vaccination", "covid-19-vaccine-doses-administered-per-100-people.csv")
 ) %>%
   dplyr::mutate(
     Day = as.Date(Day),
@@ -120,15 +120,5 @@ vaccination_data_clean <- load_csv(
 # Cumulative excess deaths per million, all ages, projected estimates
 excess_dat <- load_csv(
   "excess_mort",
-  here::here("ready_to_import", "data_raw", "mortality", "cumulative-excess-deaths-per-million-covid.csv")
-)
-
-# ---- Loading Summary ----
-message(
-  "Loaded datasets: ",
-  "age=", nrow(age),
-  " | UHC=", nrow(essential_health_data_clean),
-  " | GDP=", nrow(gdp_data_clean),
-  " | Vacc(nearest to ", VAX_TARGET_DATE, ")=", nrow(vaccination_data_clean),
-  " | Excess(raw rows)=", nrow(excess_dat)
+  here::here("data_raw", "mortality", "cumulative-excess-deaths-per-million-covid.csv")
 )

@@ -3,16 +3,16 @@
 # Purpose: Replicate Table 1 (subgroup correlations) and Table 2 (GDP thresholds)
 #
 # Dependencies: df_complete_all_analysis.csv (from 03_analysis.R)
-# Outputs: table1_subgroup_correlations.csv, table2_gdp_thresholds.csv
+# Outputs: table1_subgroup_correlations.csv, table2_gdp_thresholds.csv, table1_detailed_results.csv, table2_detailed_results.csv
 #
 # Paper Reference: Table 1 & Table 2
 # ============================================================================
 
-source(here::here("ready_to_import", "00_library_loader.R"))
+source(here::here("00_library_loader.R"))
 
 # ---- Data Loading & Validation ----
-complete_cases_file <- here::here("ready_to_import", "data_manipulated", "df_complete_all_analysis.csv")
-out_dir <- here::here("ready_to_import", "outputs")
+complete_cases_file <- here::here("data_manipulated", "df_complete_all_analysis.csv")
+out_dir <- here::here("outputs")
 
 stopifnot(file.exists(complete_cases_file))
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
@@ -20,18 +20,10 @@ dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 # Load complete cases dataset
 df_complete_all <- readr::read_csv(complete_cases_file, show_col_types = FALSE)
 
-message("Data loaded: ", nrow(df_complete_all), " complete cases for table analysis")
-
 # ---- Calculate Reference Medians ----
 median_age_cutoff <- median(df_complete_all$median_age)
 median_uhc_cutoff <- median(df_complete_all$uhc)
 median_gdp_cutoff <- median(df_complete_all$gdp)
-
-message(
-  "Reference medians - Age: ", round(median_age_cutoff, 1),
-  ", UHC: ", round(median_uhc_cutoff, 1),
-  ", GDP: $", scales::comma(median_gdp_cutoff)
-)
 
 # ---- Helper Functions ----
 # Calculate correlation with both Pearson and Spearman, plus sample size and significance

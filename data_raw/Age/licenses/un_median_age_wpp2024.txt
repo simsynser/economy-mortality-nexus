@@ -1,9 +1,12 @@
-Median Age – World Population Prospects 2024 (Online Edition)
-Source: United Nations, Department of Economic and Social Affairs, Population Division
-License: Creative Commons Attribution 3.0 IGO (CC BY 3.0 IGO) — http://creativecommons.org/licenses/by/3.0/igo/
-Suggested citation: United Nations, Department of Economic and Social Affairs, Population Division (2024). World Population Prospects 2024, Online Edition.
-URL: https://population.un.org/wpp/
-Retrieved for this repository: 2025-03-20
-Data file(s) in this repo: data/Age/age2022.csv; ready_to_import/data_manipulated/age/age2022_manipulated.csv
-
-Disclaimer: The designations employed and the presentation of material do not imply the expression of any opinion by the United Nations concerning the legal status of any country, territory, city or area, or of its authorities, or concerning the delimitation of its frontiers or boundaries. No UN endorsement is implied.
+Median Age – World Population Prospects 2024 (via Our World in Data)
+Original source: United Nations, Department of Economic and Social Affairs, Population Division
+Data provider: Our World in Data
+Original license: Creative Commons Attribution 3.0 IGO (CC BY 3.0 IGO)
+OWID processing license: Creative Commons Attribution 4.0 International (CC BY 4.0)
+Suggested citation: UN, World Population Prospects (2024) – processed by Our World in Data. "Median age, total – UN WPP" [dataset]. United Nations, "World Population Prospects" [original data].
+OWID URL: https://ourworldindata.org/grapher/median-age
+UN URL: https://population.un.org/wpp/downloads/
+Retrieved for this repository: 2025-03-20 (from OWID, last updated by OWID: 2024-07-12)
+Data file(s) in this repo: /data_raw/age/age2022.csv
+UN Disclaimer: The designations employed and the presentation of material do not imply the expression of any opinion by the United Nations concerning the legal status of any country, territory, city or area, or of its authorities, or concerning the delimitation of its frontiers or boundaries. No UN endorsement is implied.
+OWID Note: Data processed by Our World in Data includes standardizing country names and world region definitions, converting units, calculating derived indicators, and adapting metadata.

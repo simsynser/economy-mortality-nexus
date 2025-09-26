@@ -4,24 +4,22 @@
 #          in the wealth-mortality nexus with 79 countries (GAM-only analysis)
 #
 # Dependencies: df_complete_all_analysis.csv (from 03_analysis.R)
-# Outputs: correlation_matrix_heatmap.png, correlation_matrix_data.csv
+# Outputs: correlation_matrix_heatmap.png, correlation_matrix_data.csv, key_correlations_summary.csv
 #
 # Paper Reference: Figure 3. Pearson correlation matrix (n=79 countries, GAM estimates)
 # ============================================================================
 
-source(here::here("ready_to_import", "00_library_loader.R"))
+source(here::here("00_library_loader.R"))
 
 # ---- Data Loading & Validation ----
-complete_cases_file <- here::here("ready_to_import", "data_manipulated", "df_complete_all_analysis.csv")
-out_dir <- here::here("ready_to_import", "outputs")
+complete_cases_file <- here::here("data_manipulated", "df_complete_all_analysis.csv")
+out_dir <- here::here("outputs")
 
 stopifnot(file.exists(complete_cases_file))
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 # Load complete cases dataset
 df_complete_all <- readr::read_csv(complete_cases_file, show_col_types = FALSE)
-
-message("Data loaded: ", nrow(df_complete_all), " complete cases for correlation matrix")
 
 # ---- Calculate Pearson Correlation Matrix ----
 M_r <- df_complete_all %>%

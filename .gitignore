@@ -1,0 +1,14 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# Generated output folders
+data_manipulated/
+outputs/
+
+# R temporary files
+*.Rdata
+*.rds
+.DS_Store
+Thumbs.db
