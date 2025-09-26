@@ -19,7 +19,7 @@ This repository bundles snapshot copies of third-party datasets for reproducibil
 | GDP per capita (current US$) | `data/gdp/gdp-per-capita-worldbank.csv` | World Bank, World Development Indicators (NY.GDP.PCAP.CD) | **CC BY 4.0** |
 | UHC Service Coverage Index (2021) | `data/health/healthcare-access-quality-un.csv` | WHO Global Health Observatory (via World Bank API/OWID) | **CC BY 4.0** + WHO additional terms |
 | Excess mortality, cumulative per million (to 2023-05-05) | `data/mortality/withoutEstimates/cumulative-excess-deaths-per-million-covid.csv` | Human Mortality Database (STMF) & World Mortality Dataset (Karlinsky & Kobak) — **processed by** Our World in Data | **CC BY 4.0** |
-| COVID-19 vaccine doses per 100 | `data/vaccination/covid-19-vaccine-doses-administered-per-100-people(1).csv` | Our World in Data (counts from WHO; per-capita using UN WPP 2022) | **CC BY 4.0** (+ WHO terms when citing WHO directly) |
+| COVID-19 vaccine doses per 100 | `data/vaccination/covid-19-vaccine-doses-administered-per-100-people.csv` | Our World in Data (counts from WHO; per-capita using UN WPP 2022) | **CC BY 4.0** (+ WHO terms when citing WHO directly) |
 
 ### Processing notes
 

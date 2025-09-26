@@ -3,7 +3,7 @@ Source: Our World in Data (counts now sourced from WHO; per-capita using UN WPP 
 License: Creative Commons Attribution 4.0 International (CC BY 4.0)
 OWID vaccination data: https://ourworldindata.org/covid-vaccinations
 Retrieved for this repository: 2025-03-21
-Data file(s) in this repo: data/vaccination/covid-19-vaccine-doses-administered-per-100-people(1).csv
+Data file(s) in this repo: data/vaccination/covid-19-vaccine-doses-administered-per-100-people.csv
 
 Notes: Total doses include primary series and boosters. Coverage can exceed 100% due to population denominator issues (migration, estimate lags).
 WHO additional terms apply when citing WHO directly (no endorsement; no de-anonymization; arbitration).
