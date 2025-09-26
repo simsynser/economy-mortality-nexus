@@ -75,7 +75,7 @@ corrplot(M_r,
   insig = "blank",
   addCoef.col = "black",
   diag = FALSE,
-  title = paste0("Pearson correlation matrix (n=", nrow(df_complete_all), " countries)"),
+  #title = paste0("Pearson correlation matrix (n=", nrow(df_complete_all), " countries)"),
   mar = c(0, 0, 2, 0)
 )
 
