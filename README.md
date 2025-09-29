@@ -1,4 +1,4 @@
-# COVID-19 Wealth-Mortality Nexus Analysis Pipeline
+# COVID-19 Economy-Mortality Nexus Analysis Pipeline
 
 ## Overview
 
