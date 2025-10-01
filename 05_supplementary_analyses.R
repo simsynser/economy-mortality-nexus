@@ -126,4 +126,32 @@ df_complete_all_alt %>%
 
 
 
+# ============================================================================
+####wealth data: https://worldpopulationreview.com/country-rankings/wealth-per-adult-by-country
+#
+#
+#
+#
+#
+#
+# ============================================================================
 
+
+# =========================
+# 1) Load wealth in 2022 as an alternative variable to economic wealth
+# =========================
+wealth <- load_csv(
+  "wealth",
+  here::here("data_raw", "wealth", "wealth-per-adult-by-country-2025 (2).csv")
+) %>%
+  dplyr::mutate(iso3c = countrycode::countrycode(country, origin = "country.name", destination = "iso3c")) %>%
+  drop_na() %>%
+  dplyr::select(iso3c, MedianWealthCountries_2022)
+
+# =========================
+# 2) join variable wealth to existing variables
+# =========================
+df_complete_all_alt_alt <- dplyr::left_join(df_complete_all_alt,
+                                        wealth,
+                                        by = c("iso3c" = "iso3c")) %>%
+  dplyr::rename(age65greater = `2022`)
