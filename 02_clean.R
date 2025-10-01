@@ -115,7 +115,7 @@ message("[02_clean] Successfully processed ", nrow(mortality_data_clean), " coun
 # Full joins preserve all available country data across datasets
 # Only countries with GAM mortality estimates will have complete records
 dat <- age %>%
-  dplyr::transmute(iso3c, median_age) %>%
+  dplyr::transmute(iso3c, age_65plus) %>% # Changed from median_age
   dplyr::full_join(
     vaccination_data_clean %>%
       dplyr::transmute(iso3c, vax_day = Day, vacc = vacc_per_100),
@@ -163,7 +163,7 @@ readr::write_csv(
 n_countries_total <- dplyr::n_distinct(dat$iso3c, na.rm = TRUE)
 n_complete_cases <- dat %>%
   dplyr::filter(
-    !is.na(gdp), !is.na(median_age), !is.na(vacc),
+    !is.na(gdp), !is.na(age_65plus), !is.na(vacc),
     !is.na(uhc), !is.na(excess_mort)
   ) %>%
   nrow()
