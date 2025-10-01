@@ -127,7 +127,8 @@ df_complete_all_alt %>%
 
 
 # ============================================================================
-####wealth data: https://worldpopulationreview.com/country-rankings/wealth-per-adult-by-country
+###wealth data 1: https://databank.worldbank.org/source/wealth-accounts/Type/TABLE/preview/on#
+###wealth data 2: https://worldpopulationreview.com/country-rankings/wealth-per-adult-by-country
 #
 #
 #
@@ -142,16 +143,15 @@ df_complete_all_alt %>%
 # =========================
 wealth <- load_csv(
   "wealth",
-  here::here("data_raw", "wealth", "wealth-per-adult-by-country-2025 (2).csv")
+  here::here("data_raw", "wealth", "wealthIndex.csv")
 ) %>%
-  dplyr::mutate(iso3c = countrycode::countrycode(country, origin = "country.name", destination = "iso3c")) %>%
-  drop_na() %>%
-  dplyr::select(iso3c, MedianWealthCountries_2022)
+  #dplyr::mutate(iso3c = countrycode::countrycode(country, origin = "country.name", destination = "iso3c")) %>%
+  #drop_na() %>%
+  dplyr::select(`Country Code`, `2020 [YR2020]`)
 
 # =========================
 # 2) join variable wealth to existing variables
 # =========================
 df_complete_all_alt_alt <- dplyr::left_join(df_complete_all_alt,
                                         wealth,
-                                        by = c("iso3c" = "iso3c")) %>%
-  dplyr::rename(age65greater = `2022`)
+                                        by = c("iso3c" = "Country Code")) 
