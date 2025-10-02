@@ -8,7 +8,7 @@
 # - ISO standardization: Robust country code mapping with manual overrides
 # - Modular structure: Each dataset can be loaded independently
 #
-# Exposes: age, essential_health_data_clean, gdp_data_clean,
+# Exposes: age_median, age_65plus, essential_health_data_clean, gdp_data_clean,
 #          vaccination_data_clean, excess_dat
 # ============================================================================
 
@@ -58,10 +58,20 @@ nearest_date <- function(df, target_date = as.Date("2023-05-05")) {
 VAX_TARGET_DATE <- as.Date("2023-05-05") # WHO/OWID recommended reference point
 
 # =========================
-# 1) DEMOGRAPHIC DATA: Population Ages 65+ (World Bank WDI via UN WPP)
+# 1a) DEMOGRAPHIC DATA: Median Age (UN WPP via OWID)
 # =========================
-# Uses 2022 midyear estimates as demographic vulnerability indicator for COVID-19 risk
-age <- load_csv(
+age_median <- load_csv(
+  "age_median",
+  here::here("data_raw", "age", "age2022.csv")
+) %>%
+  dplyr::rename(median_age = `Median age - Sex: all - Age: all - Variant: estimates`) %>%
+  dplyr::mutate(iso3c = map_iso3(Entity)) %>%
+  dplyr::select(iso3c, median_age)
+
+# =========================
+# 1b) DEMOGRAPHIC DATA: Population Ages 65+ (World Bank WDI via UN WPP)
+# =========================
+age_65plus <- load_csv(
   "age_65plus",
   here::here("data_raw", "age_alt", "greater_equal65_worldBank.csv")
 ) %>%

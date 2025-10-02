@@ -9,7 +9,7 @@
 # - Consistent GAM methodology ensures all estimates use identical smoothing approach
 #
 # Dependencies (from 01_loader.R):
-# - Objects: age, gdp_data_clean, essential_health_data_clean,
+# - Objects: age_median, age_65plus, gdp_data_clean, essential_health_data_clean,
 #            vaccination_data_clean, excess_dat
 #
 # Outputs:
@@ -28,7 +28,8 @@ source(here::here("00_library_loader.R"))
 # Verify required objects from loader
 stopifnot(
   exists("excess_dat"), exists("vaccination_data_clean"),
-  exists("age"), exists("gdp_data_clean"), exists("essential_health_data_clean")
+  exists("age_median"), exists("age_65plus"),
+  exists("gdp_data_clean"), exists("essential_health_data_clean")
 )
 
 TARGET_DATE <- as.Date("2023-05-05")
@@ -114,8 +115,8 @@ message("[02_clean] Successfully processed ", nrow(mortality_data_clean), " coun
 # ---- Integrate All Datasets --------------------------------------------------
 # Full joins preserve all available country data across datasets
 # Only countries with GAM mortality estimates will have complete records
-dat <- age %>%
-  dplyr::transmute(iso3c, age_65plus) %>% # Changed from median_age
+dat <- age_median %>%
+  dplyr::full_join(age_65plus, by = "iso3c") %>%
   dplyr::full_join(
     vaccination_data_clean %>%
       dplyr::transmute(iso3c, vax_day = Day, vacc = vacc_per_100),
@@ -163,7 +164,7 @@ readr::write_csv(
 n_countries_total <- dplyr::n_distinct(dat$iso3c, na.rm = TRUE)
 n_complete_cases <- dat %>%
   dplyr::filter(
-    !is.na(gdp), !is.na(age_65plus), !is.na(vacc),
+    !is.na(gdp), !is.na(median_age), !is.na(age_65plus), !is.na(vacc),
     !is.na(uhc), !is.na(excess_mort)
   ) %>%
   nrow()

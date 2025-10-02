@@ -28,6 +28,7 @@ ready_to_import/
 See **[DATA_SOURCES.md](DATA_SOURCES.md)** for complete licensing information and snapshot dates.
 **Datasets include:**
 - Population ages 65+ (World Bank WDI via UN WPP)
+- Median age (UN WPP via OWID)
 - GDP per capita (World Bank WDI)  
 - UHC service coverage (WHO via World Bank)
 - Excess mortality (HMD/WMD via OWID)

@@ -19,7 +19,7 @@ dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 dat <- readr::read_csv(in_file, show_col_types = FALSE)
 
 # Validate required columns are present
-required_cols <- c("iso3c", "age_65plus", "gdp", "uhc", "vacc", "excess_mort")
+required_cols <- c("iso3c", "median_age", "age_65plus", "gdp", "uhc", "vacc", "excess_mort")
 missing_cols <- setdiff(required_cols, names(dat))
 if (length(missing_cols)) {
   stop("analysis_table.csv misses: ", paste(missing_cols, collapse = ", "))
@@ -75,9 +75,11 @@ calc_cor_and_lost <- function(df, xvar, yvar) {
 # - Pandemic response capacity (vaccination) vs. development
 # - Health outcomes (excess mortality) vs. protective factors (age, vaccination, UHC)
 pairs <- list(
+  c("gdp", "median_age"), # Development-demographics relationship (median age)
   c("gdp", "age_65plus"), # Development-demographics relationship
   c("gdp", "vacc"), # Economic capacity-vaccination rollout
   c("gdp", "uhc"), # Economic development-health system strength
+  c("median_age", "excess_mort"), # Demographic vulnerability-mortality outcomes (median age)
   c("age_65plus", "excess_mort"), # Demographic vulnerability-mortality outcomes
   c("vacc", "excess_mort"), # Vaccination coverage-mortality protection
   c("uhc", "excess_mort") # Health system strength-mortality outcomes
@@ -115,10 +117,10 @@ readr::write_csv(results_df, file.path(out_dir, "analysis_correlations.csv"))
 
 # ---- Complete Cases Analysis ---------------------------------------------
 # Identify countries with complete data across all key variables
-# These form the analytical sample for multivariate analysis
 df_complete_all <- dat %>%
   filter(
     !is.na(gdp),
+    !is.na(median_age),
     !is.na(age_65plus),
     !is.na(vacc),
     !is.na(uhc),
@@ -138,9 +140,11 @@ readr::write_csv(
 missing_counts <- c(
   excess_mort = sum(is.na(dat$excess_mort)),
   gdp = sum(is.na(dat$gdp)),
+  median_age = sum(is.na(dat$median_age)),
   age_65plus = sum(is.na(dat$age_65plus)),
   uhc = sum(is.na(dat$uhc)),
   vacc = sum(is.na(dat$vacc))
 )
 # Export full complete cases dataset for downstream analysis
 readr::write_csv(df_complete_all, file.path(out_dir, "df_complete_all_analysis.csv"))
+# median split variation
