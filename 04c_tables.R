@@ -1,11 +1,11 @@
-# 04c_tables.R — Tables 1, 2, 3 (Subgroup & GDP Threshold Analysis)
+# 04c_tables.R — Tables 1, 2, 4 (Subgroup & GDP Threshold Analysis)
 # ============================================================================
 # Purpose: Replicate Table 1 & 2 (subgroup correlations) and Table 3 (GDP thresholds)
 #
 # Dependencies: df_complete_all_analysis.csv (from 03_analysis.R)
 # Outputs: table1_subgroup_correlations.csv, table2_subgroup_correlations_age65plus.csv,
-#          table3_gdp_thresholds.csv#
-# Paper Reference: Table 1, Table 2, Table 3
+#          table4_gdp_thresholds.csv
+# Paper Reference: Table 1, Table 2, Table 4
 # ============================================================================
 
 source(here::here("00_library_loader.R"))
@@ -256,16 +256,16 @@ table2 <- data.frame(
   stringsAsFactors = FALSE
 )
 
-# ---- Generate Table 3: GDP Threshold Analysis ----
+# ---- Generate Table 4: GDP Threshold Analysis ----
 gdp_thresholds <- c(20000, 25000, 30000, 33000)
-table3_results <- list()
+table4_results <- list()
 
 for (threshold in gdp_thresholds) {
   # Countries below / above threshold
   below <- calc_gdp_threshold_correlation(df_complete_all, threshold, "<=")
   above <- calc_gdp_threshold_correlation(df_complete_all, threshold, ">")
 
-  table3_results[[paste0("threshold_", threshold)]] <- list(
+  table4_results[[paste0("threshold_", threshold)]] <- list(
     threshold = threshold,
     below_cor = below$correlation,
     below_n = below$n,
@@ -276,10 +276,10 @@ for (threshold in gdp_thresholds) {
   )
 }
 
-table3 <- data.frame(
+table4 <- data.frame(
   GDP_per_capita_USD = paste0(scales::comma(gdp_thresholds / 1000), ",000"),
   Below_Threshold = sapply(gdp_thresholds, function(t) {
-    res <- table3_results[[paste0("threshold_", t)]]
+    res <- table4_results[[paste0("threshold_", t)]]
 
     # Format significance: * for p≤.05, ** for p≤.01
     stars <- ""
@@ -292,7 +292,7 @@ table3 <- data.frame(
     paste0(res$below_cor, stars, "/", res$below_n)
   }),
   Above_Threshold = sapply(gdp_thresholds, function(t) {
-    res <- table3_results[[paste0("threshold_", t)]]
+    res <- table4_results[[paste0("threshold_", t)]]
 
     # Format significance: * for p≤.05, ** for p≤.01
     stars <- ""
@@ -308,9 +308,9 @@ table3 <- data.frame(
 )
 
 # Rename columns to match paper exactly
-colnames(table3) <- c("GDP per capita [US$]", "≤", ">")
+colnames(table4) <- c("GDP per capita [US$]", "≤", ">")
 
 # ---- Export Tables ----
 readr::write_csv(table2, file.path(out_dir, "table2_subgroup_correlations_age65plus.csv"))
 readr::write_csv(table1, file.path(out_dir, "table1_subgroup_correlations.csv"))
-readr::write_csv(table3, file.path(out_dir, "table3_gdp_thresholds.csv"))
+readr::write_csv(table4, file.path(out_dir, "table4_gdp_thresholds.csv"))
