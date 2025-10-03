@@ -131,3 +131,5 @@ country_list <- df_complete_all %>%
   arrange(continent, iso3c)
 
 readr::write_csv(country_list, file.path(out_dir, "complete_cases_country_list.csv"))
+
+message("[04b] coverage map saved to outputs/")

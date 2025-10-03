@@ -1,11 +1,11 @@
-# 04c_tables.R — Tables 1, 2, 4 (Subgroup & GDP Threshold Analysis)
+# 04c_tables.R — Tables 1, 2, 3, 4 (subgroup correlations,
 # ============================================================================
-# Purpose: Replicate Table 1 & 2 (subgroup correlations) and Table 3 (GDP thresholds)
+# Purpose: Replicate Table 1 & 2 (subgroup correlations) Table 3 (OLS) and Table 4 (GDP thresholds)
 #
 # Dependencies: df_complete_all_analysis.csv (from 03_analysis.R)
-# Outputs: table1_subgroup_correlations.csv, table2_subgroup_correlations_age65plus.csv,
+# Outputs: table1_subgroup_correlations.csv, table2_subgroup_correlations_age65plus.csv, table3_ols_interactions.csv,
 #          table4_gdp_thresholds.csv
-# Paper Reference: Table 1, Table 2, Table 4
+# Paper Reference: Table 1, Table 2, Table 3, Table 4
 # ============================================================================
 
 source(here::here("00_library_loader.R"))
@@ -44,10 +44,10 @@ calc_subgroup_correlation <- function(data, var1, var2) {
 
   # Return organized results
   list(
-    pearson = round(pear_test$estimate, 3), # Correlation coefficient
-    spearman = round(spear_test$estimate, 3), # Non-parametric version
-    n = n, # Sample size
-    p_pear = pear_test$p.value, # Significance levels
+    pearson = round(pear_test$estimate, 3),
+    spearman = round(spear_test$estimate, 3),
+    n = n,
+    p_pear = pear_test$p.value,
     p_spear = spear_test$p.value
   )
 }
@@ -85,7 +85,6 @@ format_correlation_with_significance <- function(cor_val, p_val) {
     return("NA")
   }
 
-  # Two-level significance marking
   stars <- ""
   if (p_val <= 0.01) {
     stars <- "**"
@@ -256,6 +255,77 @@ table2 <- data.frame(
   stringsAsFactors = FALSE
 )
 
+# ---- Generate Table 3: OLS Interaction Models ----
+# Test interaction effects between age indicators and protective factors
+# Negative interaction coefficients indicate that protective factors (UHC, vaccination)
+# weaken the positive relationship between age and excess mortality
+# All models use standardized variables (z-scores) for coefficient comparability
+
+# Model 1: Median Age × UHC
+model1 <- lm(scale(excess_mort) ~ scale(median_age) + scale(uhc) +
+  scale(median_age):scale(uhc), data = df_complete_all)
+
+# Model 2: Median Age × Vaccination
+model2 <- lm(scale(excess_mort) ~ scale(median_age) + scale(vacc) +
+  scale(median_age):scale(vacc), data = df_complete_all)
+
+# Model 3: Age 65+ × UHC
+model3 <- lm(scale(excess_mort) ~ scale(age_65plus) + scale(uhc) +
+  scale(age_65plus):scale(uhc), data = df_complete_all)
+
+# Model 4: Age 65+ × Vaccination
+model4 <- lm(scale(excess_mort) ~ scale(age_65plus) + scale(vacc) +
+  scale(age_65plus):scale(vacc), data = df_complete_all)
+
+# Extract coefficients and statistics
+extract_ols_results <- function(model, model_name) {
+  coef_summary <- summary(model)$coefficients
+  fit_stats <- summary(model)
+
+  # Get interaction term (always last row)
+  interaction_row <- nrow(coef_summary)
+
+  data.frame(
+    Model = model_name,
+    Interaction_Beta = round(coef_summary[interaction_row, "Estimate"], 3),
+    Interaction_SE = round(coef_summary[interaction_row, "Std. Error"], 3),
+    Interaction_t = round(coef_summary[interaction_row, "t value"], 3),
+    Interaction_p = round(coef_summary[interaction_row, "Pr(>|t|)"], 4),
+    R_squared = round(fit_stats$r.squared, 3),
+    Adj_R_squared = round(fit_stats$adj.r.squared, 3),
+    N = nobs(model),
+    stringsAsFactors = FALSE
+  )
+}
+
+# Compile results
+table3 <- rbind(
+  extract_ols_results(model1, "Median Age × UHC"),
+  extract_ols_results(model2, "Median Age × Vaccination"),
+  extract_ols_results(model3, "Age 65+ × UHC"),
+  extract_ols_results(model4, "Age 65+ × Vaccination")
+)
+
+# Add significance stars
+table3$Interaction_Beta_formatted <- sapply(seq_len(nrow(table3)), function(i) {
+  beta <- table3$Interaction_Beta[i]
+  p <- table3$Interaction_p[i]
+  stars <- if (p <= 0.001) "***" else if (p <= 0.01) "**" else if (p <= 0.05) "*" else ""
+  paste0(beta, stars)
+})
+
+# Reorder columns for output
+table3_output <- table3[, c(
+  "Model", "Interaction_Beta_formatted", "Interaction_SE",
+  "Interaction_t", "Interaction_p", "R_squared",
+  "Adj_R_squared", "N"
+)]
+
+colnames(table3_output) <- c(
+  "Model", "Interaction β", "SE", "t", "p-value",
+  "R²", "Adj. R²", "N"
+)
+
 # ---- Generate Table 4: GDP Threshold Analysis ----
 gdp_thresholds <- c(20000, 25000, 30000, 33000)
 table4_results <- list()
@@ -311,6 +381,9 @@ table4 <- data.frame(
 colnames(table4) <- c("GDP per capita [US$]", "≤", ">")
 
 # ---- Export Tables ----
-readr::write_csv(table2, file.path(out_dir, "table2_subgroup_correlations_age65plus.csv"))
 readr::write_csv(table1, file.path(out_dir, "table1_subgroup_correlations.csv"))
+readr::write_csv(table2, file.path(out_dir, "table2_subgroup_correlations_age65plus.csv"))
+readr::write_csv(table3_output, file.path(out_dir, "table3_ols_interactions.csv"))
 readr::write_csv(table4, file.path(out_dir, "table4_gdp_thresholds.csv"))
+
+message("[04c] Tables 1-4 saved to outputs/")
