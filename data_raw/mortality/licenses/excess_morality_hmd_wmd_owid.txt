@@ -4,6 +4,6 @@ License: Creative Commons Attribution 4.0 International (CC BY 4.0)
 OWID explainer: https://ourworldindata.org/excess-mortality-covid
 HMD: https://www.mortality.org  |  WMD: https://github.com/akarlinsky/world_mortality
 Retrieved for this repository: 2025-04-06
+Temporal coverage: January 2020 to May 2023
 Data file(s) in this repo: data_raw/mortality/cumulative-excess-deaths-per-million-covid.csv
-
-Notes: Excess deaths = reported all-cause deaths − expected baseline (per WMD methodology, using 2015–2019 baseline). See source documentation for caveats and coverage.
+Notes: Excess deaths = reported all-cause deaths − expected baseline (per WMD methodology, using 2015–2019 baseline). Cumulative totals from January 1, 2020. See source documentation for caveats and coverage.

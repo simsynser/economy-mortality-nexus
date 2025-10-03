@@ -55,7 +55,7 @@ nearest_date <- function(df, target_date = as.Date("2023-05-05")) {
 }
 
 # ---- configuration ----
-VAX_TARGET_DATE <- as.Date("2023-05-05") # WHO/OWID recommended reference point
+VAX_TARGET_DATE <- as.Date("2023-05-05")
 
 # =========================
 # 1a) DEMOGRAPHIC DATA: Median Age (UN WPP via OWID)
@@ -92,7 +92,7 @@ essential_health_data_clean <- load_csv(
 ) %>%
   dplyr::filter(Year == 2021) %>%
   dplyr::mutate(iso3c = map_iso3(Entity)) %>%
-  dplyr::filter(!is.na(iso3c)) # Remove regional aggregates and unmatched entities
+  dplyr::filter(!is.na(iso3c))
 
 # =========================
 # 3) ECONOMIC INDICATORS: GDP per capita PPP (World Bank)

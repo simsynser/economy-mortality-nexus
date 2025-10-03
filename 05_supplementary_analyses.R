@@ -155,3 +155,16 @@ wealth <- load_csv(
 df_complete_all_alt_alt <- dplyr::left_join(df_complete_all_alt,
                                         wealth,
                                         by = c("iso3c" = "Country Code")) 
+
+
+age65 <- read.csv("data_raw/age_alt/greater_equal65_worldBank.csv") %>%
+  rename(iso3c = Country.Code,
+         age_65plus = X2022)
+
+# Now join is cleaner
+df_complete_all %>%
+  left_join(age65, by = "iso3c") %>%
+  summarise(
+    countries_with_age65 = sum(!is.na(age_65plus)),
+    missing = sum(is.na(age_65plus))
+  )

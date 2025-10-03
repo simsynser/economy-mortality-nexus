@@ -1,5 +1,5 @@
 COVID-19 Vaccine doses (per 100 people)
-Source: Our World in Data (counts now sourced from WHO; per-capita using UN WPP 2022 population)
+Source: Our World in Data (vaccination counts from WHO as of August 2024; per-capita calculations using UN WPP 2022 population)
 License: Creative Commons Attribution 4.0 International (CC BY 4.0)
 OWID vaccination data: https://ourworldindata.org/covid-vaccinations
 Retrieved for this repository: 2025-03-21
