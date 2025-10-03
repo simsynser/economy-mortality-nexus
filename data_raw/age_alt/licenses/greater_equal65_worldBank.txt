@@ -1,0 +1,11 @@
+Population ages 65 and above (% of total population) — World Development Indicators (ID: SP.POP.65UP.TO.ZS)
+Source: World Bank, World Development Indicators. Original data from United Nations Population Division, World Population Prospects.
+License: Creative Commons Attribution 4.0 International (CC BY 4.0) — https://creativecommons.org/licenses/by/4.0/
+URL: https://data.worldbank.org/indicator/SP.POP.65UP.TO.ZS?view=map&year=2022
+Retrieved for this repository: 29.09.2025
+Data file(s) in this repo: data_raw/age_alt/greater_equal65_worldBank.csv
+Reference year: 2022 (midyear estimates)
+Aggregation method: Weighted average
+Limitations: Interpolations from five-year cohort data may not reflect actual annual age distributions. Population based on de facto definition (all residents regardless of legal status).
+Statistical methodology: Based on age/sex distributions from UN Population Division's World Population Prospects. Values are midyear estimates dependent on fertility, mortality, and migration dynamics.
+Development relevance: Age structure indicator used for calculating age dependency ratios and analyzing demographic vulnerability, resource allocation, and infrastructure planning needs.

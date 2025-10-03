@@ -1,11 +1,11 @@
-# 04c_tables.R — Tables 1 & 2 (Subgroup & GDP Threshold Analysis)
+# 04c_tables.R — Tables 1, 2, 3, 4 (subgroup correlations,
 # ============================================================================
-# Purpose: Replicate Table 1 (subgroup correlations) and Table 2 (GDP thresholds)
+# Purpose: Replicate Table 1 & 2 (subgroup correlations) Table 3 (OLS) and Table 4 (GDP thresholds)
 #
 # Dependencies: df_complete_all_analysis.csv (from 03_analysis.R)
-# Outputs: table1_subgroup_correlations.csv, table2_gdp_thresholds.csv, table1_detailed_results.csv, table2_detailed_results.csv
-#
-# Paper Reference: Table 1 & Table 2
+# Outputs: table1_subgroup_correlations.csv, table2_subgroup_correlations_age65plus.csv, table3_ols_interactions.csv,
+#          table4_gdp_thresholds.csv
+# Paper Reference: Table 1, Table 2, Table 3, Table 4
 # ============================================================================
 
 source(here::here("00_library_loader.R"))
@@ -21,6 +21,7 @@ dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 df_complete_all <- readr::read_csv(complete_cases_file, show_col_types = FALSE)
 
 # ---- Calculate Reference Medians ----
+median_age_65plus_cutoff <- median(df_complete_all$age_65plus)
 median_age_cutoff <- median(df_complete_all$median_age)
 median_uhc_cutoff <- median(df_complete_all$uhc)
 median_gdp_cutoff <- median(df_complete_all$gdp)
@@ -43,10 +44,10 @@ calc_subgroup_correlation <- function(data, var1, var2) {
 
   # Return organized results
   list(
-    pearson = round(pear_test$estimate, 3), # Correlation coefficient
-    spearman = round(spear_test$estimate, 3), # Non-parametric version
-    n = n, # Sample size
-    p_pear = pear_test$p.value, # Significance levels
+    pearson = round(pear_test$estimate, 3),
+    spearman = round(spear_test$estimate, 3),
+    n = n,
+    p_pear = pear_test$p.value,
     p_spear = spear_test$p.value
   )
 }
@@ -80,18 +81,24 @@ calc_gdp_threshold_correlation <- function(data, threshold, direction = "<=") {
 }
 # Format correlation with significance indicators
 format_correlation_with_significance <- function(cor_val, p_val) {
-  if (is.na(cor_val) || is.na(p_val)) { # Not enough data to compute
+  if (is.na(cor_val) || is.na(p_val)) {
     return("NA")
   }
 
-  stars <- ifelse(p_val <= 0.01, "*", "") # Paper uses * for p <= .01
+  stars <- ""
+  if (p_val <= 0.01) {
+    stars <- "**"
+  } else if (p_val <= 0.05) {
+    stars <- "*"
+  }
+
   paste0(cor_val, stars)
 }
 
 # ---- Generate Table 1: Subgroup Correlation Analysis ----
 # UHC ≤ 79 vs UHC > 79: Age on Mortality
 age_mort_low_uhc <- calc_subgroup_correlation(
-  df_complete_all %>% filter(uhc <= median_uhc_cutoff), # 79 is median UHC in dataset
+  df_complete_all %>% filter(uhc <= median_uhc_cutoff),
   "median_age", "excess_mort"
 )
 
@@ -102,7 +109,7 @@ age_mort_high_uhc <- calc_subgroup_correlation(
 
 # Age ≤ 38 vs Age > 38: UHC on Mortality
 uhc_mort_young <- calc_subgroup_correlation(
-  df_complete_all %>% filter(median_age <= median_age_cutoff), # 37.7 is median age in expanded dataset
+  df_complete_all %>% filter(median_age <= median_age_cutoff),
   "uhc", "excess_mort"
 )
 
@@ -168,18 +175,167 @@ table1 <- data.frame(
   stringsAsFactors = FALSE
 )
 
-# ---- Generate Table 2: GDP Threshold Analysis ----
+# ---- Generate Table 2: Subgroup Analysis with Age 65+ ----
+# UHC ≤ median vs UHC > median: Age 65+ on Mortality
+age65_mort_low_uhc <- calc_subgroup_correlation(
+  df_complete_all %>% filter(uhc <= median_uhc_cutoff),
+  "age_65plus", "excess_mort"
+)
+
+age65_mort_high_uhc <- calc_subgroup_correlation(
+  df_complete_all %>% filter(uhc > median_uhc_cutoff),
+  "age_65plus", "excess_mort"
+)
+
+# Age 65+ ≤ median vs Age 65+ > median: UHC on Mortality
+uhc_mort_young_age65 <- calc_subgroup_correlation(
+  df_complete_all %>% filter(age_65plus <= median_age_65plus_cutoff),
+  "uhc", "excess_mort"
+)
+
+uhc_mort_old_age65 <- calc_subgroup_correlation(
+  df_complete_all %>% filter(age_65plus > median_age_65plus_cutoff),
+  "uhc", "excess_mort"
+)
+
+# Age 65+ ≤ median vs Age 65+ > median: Vaccination on Mortality
+vacc_mort_young_age65 <- calc_subgroup_correlation(
+  df_complete_all %>% filter(age_65plus <= median_age_65plus_cutoff),
+  "vacc", "excess_mort"
+)
+
+vacc_mort_old_age65 <- calc_subgroup_correlation(
+  df_complete_all %>% filter(age_65plus > median_age_65plus_cutoff),
+  "vacc", "excess_mort"
+)
+
+table2 <- data.frame(
+  Analysis_Group = c(
+    paste0("UHC<=", round(median_uhc_cutoff), " (n=", age65_mort_low_uhc$n, ")"),
+    paste0("UHC>", round(median_uhc_cutoff), " (n=", age65_mort_high_uhc$n, ")"),
+    paste0("Age65+<=", round(median_age_65plus_cutoff, 1), "% (n=", uhc_mort_young_age65$n, ")"),
+    paste0("Age65+>", round(median_age_65plus_cutoff, 1), "% (n=", uhc_mort_old_age65$n, ")"),
+    paste0("Age65+<=", round(median_age_65plus_cutoff, 1), "% (n=", vacc_mort_young_age65$n, ")"),
+    paste0("Age65+>", round(median_age_65plus_cutoff, 1), "% (n=", vacc_mort_old_age65$n, ")")
+  ),
+  Age65plus_on_Mortality = c(
+    paste0(
+      format_correlation_with_significance(age65_mort_low_uhc$pearson, age65_mort_low_uhc$p_pear),
+      "/", format_correlation_with_significance(age65_mort_low_uhc$spearman, age65_mort_low_uhc$p_spear)
+    ),
+    paste0(
+      format_correlation_with_significance(age65_mort_high_uhc$pearson, age65_mort_high_uhc$p_pear),
+      "/", format_correlation_with_significance(age65_mort_high_uhc$spearman, age65_mort_high_uhc$p_spear)
+    ),
+    "", "", "", ""
+  ),
+  UHC_on_Mortality = c(
+    "", "",
+    paste0(
+      format_correlation_with_significance(uhc_mort_young_age65$pearson, uhc_mort_young_age65$p_pear),
+      "/", format_correlation_with_significance(uhc_mort_young_age65$spearman, uhc_mort_young_age65$p_spear)
+    ),
+    paste0(
+      format_correlation_with_significance(uhc_mort_old_age65$pearson, uhc_mort_old_age65$p_pear),
+      "/", format_correlation_with_significance(uhc_mort_old_age65$spearman, uhc_mort_old_age65$p_spear)
+    ),
+    "", ""
+  ),
+  Vacc_on_Mortality = c(
+    "", "", "", "",
+    paste0(
+      format_correlation_with_significance(vacc_mort_young_age65$pearson, vacc_mort_young_age65$p_pear),
+      "/", format_correlation_with_significance(vacc_mort_young_age65$spearman, vacc_mort_young_age65$p_spear)
+    ),
+    paste0(
+      format_correlation_with_significance(vacc_mort_old_age65$pearson, vacc_mort_old_age65$p_pear),
+      "/", format_correlation_with_significance(vacc_mort_old_age65$spearman, vacc_mort_old_age65$p_spear)
+    )
+  ),
+  stringsAsFactors = FALSE
+)
+
+# ---- Generate Table 3: OLS Interaction Models ----
+# Test interaction effects between age indicators and protective factors
+# Negative interaction coefficients indicate that protective factors (UHC, vaccination)
+# weaken the positive relationship between age and excess mortality
+# All models use standardized variables (z-scores) for coefficient comparability
+
+# Model 1: Median Age × UHC
+model1 <- lm(scale(excess_mort) ~ scale(median_age) + scale(uhc) +
+  scale(median_age):scale(uhc), data = df_complete_all)
+
+# Model 2: Median Age × Vaccination
+model2 <- lm(scale(excess_mort) ~ scale(median_age) + scale(vacc) +
+  scale(median_age):scale(vacc), data = df_complete_all)
+
+# Model 3: Age 65+ × UHC
+model3 <- lm(scale(excess_mort) ~ scale(age_65plus) + scale(uhc) +
+  scale(age_65plus):scale(uhc), data = df_complete_all)
+
+# Model 4: Age 65+ × Vaccination
+model4 <- lm(scale(excess_mort) ~ scale(age_65plus) + scale(vacc) +
+  scale(age_65plus):scale(vacc), data = df_complete_all)
+
+# Extract coefficients and statistics
+extract_ols_results <- function(model, model_name) {
+  coef_summary <- summary(model)$coefficients
+  fit_stats <- summary(model)
+
+  # Get interaction term (always last row)
+  interaction_row <- nrow(coef_summary)
+
+  data.frame(
+    Model = model_name,
+    Interaction_Beta = round(coef_summary[interaction_row, "Estimate"], 3),
+    Interaction_SE = round(coef_summary[interaction_row, "Std. Error"], 3),
+    Interaction_t = round(coef_summary[interaction_row, "t value"], 3),
+    Interaction_p = round(coef_summary[interaction_row, "Pr(>|t|)"], 4),
+    R_squared = round(fit_stats$r.squared, 3),
+    Adj_R_squared = round(fit_stats$adj.r.squared, 3),
+    N = nobs(model),
+    stringsAsFactors = FALSE
+  )
+}
+
+# Compile results
+table3 <- rbind(
+  extract_ols_results(model1, "Median Age × UHC"),
+  extract_ols_results(model2, "Median Age × Vaccination"),
+  extract_ols_results(model3, "Age 65+ × UHC"),
+  extract_ols_results(model4, "Age 65+ × Vaccination")
+)
+
+# Add significance stars
+table3$Interaction_Beta_formatted <- sapply(seq_len(nrow(table3)), function(i) {
+  beta <- table3$Interaction_Beta[i]
+  p <- table3$Interaction_p[i]
+  stars <- if (p <= 0.001) "***" else if (p <= 0.01) "**" else if (p <= 0.05) "*" else ""
+  paste0(beta, stars)
+})
+
+# Reorder columns for output
+table3_output <- table3[, c(
+  "Model", "Interaction_Beta_formatted", "Interaction_SE",
+  "Interaction_t", "Interaction_p", "R_squared",
+  "Adj_R_squared", "N"
+)]
+
+colnames(table3_output) <- c(
+  "Model", "Interaction β", "SE", "t", "p-value",
+  "R²", "Adj. R²", "N"
+)
+
+# ---- Generate Table 4: GDP Threshold Analysis ----
 gdp_thresholds <- c(20000, 25000, 30000, 33000)
-table2_results <- list()
+table4_results <- list()
 
 for (threshold in gdp_thresholds) {
-  # Countries below threshold
+  # Countries below / above threshold
   below <- calc_gdp_threshold_correlation(df_complete_all, threshold, "<=")
-
-  # Countries above threshold
   above <- calc_gdp_threshold_correlation(df_complete_all, threshold, ">")
 
-  table2_results[[paste0("threshold_", threshold)]] <- list(
+  table4_results[[paste0("threshold_", threshold)]] <- list(
     threshold = threshold,
     below_cor = below$correlation,
     below_n = below$n,
@@ -190,13 +346,12 @@ for (threshold in gdp_thresholds) {
   )
 }
 
-# Create Table 2
-table2 <- data.frame(
+table4 <- data.frame(
   GDP_per_capita_USD = paste0(scales::comma(gdp_thresholds / 1000), ",000"),
   Below_Threshold = sapply(gdp_thresholds, function(t) {
-    res <- table2_results[[paste0("threshold_", t)]]
+    res <- table4_results[[paste0("threshold_", t)]]
 
-    # Format significance: * for p≤.05, ** for p≤.01 (matching paper)
+    # Format significance: * for p≤.05, ** for p≤.01
     stars <- ""
     if (!is.na(res$below_p)) {
       if (res$below_p <= 0.01) {
@@ -207,9 +362,9 @@ table2 <- data.frame(
     paste0(res$below_cor, stars, "/", res$below_n)
   }),
   Above_Threshold = sapply(gdp_thresholds, function(t) {
-    res <- table2_results[[paste0("threshold_", t)]]
+    res <- table4_results[[paste0("threshold_", t)]]
 
-    # Format significance: * for p≤.05, ** for p≤.01 (matching paper)
+    # Format significance: * for p≤.05, ** for p≤.01
     stars <- ""
     if (!is.na(res$above_p)) {
       if (res$above_p <= 0.01) {
@@ -223,60 +378,12 @@ table2 <- data.frame(
 )
 
 # Rename columns to match paper exactly
-colnames(table2) <- c("GDP per capita [US$]", "≤", ">")
+colnames(table4) <- c("GDP per capita [US$]", "≤", ">")
 
 # ---- Export Tables ----
 readr::write_csv(table1, file.path(out_dir, "table1_subgroup_correlations.csv"))
-readr::write_csv(table2, file.path(out_dir, "table2_gdp_thresholds.csv"))
+readr::write_csv(table2, file.path(out_dir, "table2_subgroup_correlations_age65plus.csv"))
+readr::write_csv(table3_output, file.path(out_dir, "table3_ols_interactions.csv"))
+readr::write_csv(table4, file.path(out_dir, "table4_gdp_thresholds.csv"))
 
-# ---- Export Supporting Data ----
-# Export detailed correlation results for verification
-detailed_results <- data.frame(
-  analysis = c(
-    "Age_on_Mort_LowUHC", "Age_on_Mort_HighUHC",
-    "UHC_on_Mort_Young", "UHC_on_Mort_Old",
-    "Vacc_on_Mort_Young", "Vacc_on_Mort_Old"
-  ),
-  n = c(
-    age_mort_low_uhc$n, age_mort_high_uhc$n,
-    uhc_mort_young$n, uhc_mort_old$n,
-    vacc_mort_young$n, vacc_mort_old$n
-  ),
-  pearson_r = c(
-    age_mort_low_uhc$pearson, age_mort_high_uhc$pearson,
-    uhc_mort_young$pearson, uhc_mort_old$pearson,
-    vacc_mort_young$pearson, vacc_mort_old$pearson
-  ),
-  pearson_p = c(
-    age_mort_low_uhc$p_pear, age_mort_high_uhc$p_pear,
-    uhc_mort_young$p_pear, uhc_mort_old$p_pear,
-    vacc_mort_young$p_pear, vacc_mort_old$p_pear
-  ),
-  spearman_rho = c(
-    age_mort_low_uhc$spearman, age_mort_high_uhc$spearman,
-    uhc_mort_young$spearman, uhc_mort_old$spearman,
-    vacc_mort_young$spearman, vacc_mort_old$spearman
-  ),
-  spearman_p = c(
-    age_mort_low_uhc$p_spear, age_mort_high_uhc$p_spear,
-    uhc_mort_young$p_spear, uhc_mort_old$p_spear,
-    vacc_mort_young$p_spear, vacc_mort_old$p_spear
-  )
-)
-
-readr::write_csv(detailed_results, file.path(out_dir, "table1_detailed_results.csv"))
-
-# Export GDP threshold detailed results
-gdp_detailed <- do.call(rbind, lapply(names(table2_results), function(name) {
-  res <- table2_results[[name]]
-  data.frame(
-    threshold = res$threshold,
-    direction = c("below", "above"),
-    correlation = c(res$below_cor, res$above_cor),
-    n = c(res$below_n, res$above_n),
-    p_value = c(res$below_p, res$above_p),
-    stringsAsFactors = FALSE
-  )
-}))
-
-readr::write_csv(gdp_detailed, file.path(out_dir, "table2_detailed_results.csv"))
+message("[04c] Tables 1-4 saved to outputs/")

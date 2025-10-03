@@ -69,13 +69,15 @@ corrplot(M_r,
   type = "full",
   tl.col = "black",
   tl.srt = 45,
-  number.cex = 0.8,
+  number.cex = 1.3,
+  tl.cex = 1.4,
+  cl.cex = 1.1,
   p.mat = M_r_p,
   sig.level = 0.05,
   insig = "blank",
   addCoef.col = "black",
   diag = FALSE,
-  title = paste0("Pearson correlation matrix (n=", nrow(df_complete_all), " countries)"),
+  # title = paste0("Pearson correlation matrix (n=", nrow(df_complete_all), " countries)"),
   mar = c(0, 0, 2, 0)
 )
 
@@ -118,3 +120,4 @@ key_correlations <- data.frame(
   )
 
 readr::write_csv(key_correlations, file.path(out_dir, "key_correlations_summary.csv"))
+message("[04a] correlations saved to outputs/")

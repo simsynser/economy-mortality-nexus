@@ -1,5 +1,6 @@
 UHC Service Coverage Index (SDG 3.8.1)
 Source: World Health Organization (WHO) — Global Health Observatory
+Reference year: 2021 (most recent complete data available)
 License: Creative Commons Attribution 4.0 International (CC BY 4.0) with WHO additional terms:
  - No implication of WHO endorsement or affiliation
  - No de-anonymization or misrepresentation

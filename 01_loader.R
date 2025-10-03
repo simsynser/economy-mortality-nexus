@@ -8,7 +8,7 @@
 # - ISO standardization: Robust country code mapping with manual overrides
 # - Modular structure: Each dataset can be loaded independently
 #
-# Exposes: age, essential_health_data_clean, gdp_data_clean,
+# Exposes: age_median, age_65plus, essential_health_data_clean, gdp_data_clean,
 #          vaccination_data_clean, excess_dat
 # ============================================================================
 
@@ -55,18 +55,32 @@ nearest_date <- function(df, target_date = as.Date("2023-05-05")) {
 }
 
 # ---- configuration ----
-VAX_TARGET_DATE <- as.Date("2023-05-05") # WHO/OWID recommended reference point
+VAX_TARGET_DATE <- as.Date("2023-05-05")
 
 # =========================
-# 1) DEMOGRAPHIC DATA: Median Age (UN World Population Prospects via OWID)
+# 1a) DEMOGRAPHIC DATA: Median Age (UN WPP via OWID)
 # =========================
-# Uses 2022 estimates as most recent complete demographic snapshot
-age <- load_csv(
-  "age",
+age_median <- load_csv(
+  "age_median",
   here::here("data_raw", "age", "age2022.csv")
 ) %>%
   dplyr::rename(median_age = `Median age - Sex: all - Age: all - Variant: estimates`) %>%
-  dplyr::mutate(iso3c = map_iso3(Entity))
+  dplyr::mutate(iso3c = map_iso3(Entity)) %>%
+  dplyr::select(iso3c, median_age)
+
+# =========================
+# 1b) DEMOGRAPHIC DATA: Population Ages 65+ (World Bank WDI via UN WPP)
+# =========================
+age_65plus <- load_csv(
+  "age_65plus",
+  here::here("data_raw", "age_alt", "greater_equal65_worldBank.csv")
+) %>%
+  dplyr::rename(
+    iso3c = `Country Code`,
+    age_65plus = `2022`
+  ) %>%
+  dplyr::select(iso3c, age_65plus) %>%
+  dplyr::filter(!is.na(age_65plus))
 
 # =========================
 # 2) HEALTH SYSTEMS: Universal Health Coverage Index (WHO via World Bank)
@@ -78,7 +92,7 @@ essential_health_data_clean <- load_csv(
 ) %>%
   dplyr::filter(Year == 2021) %>%
   dplyr::mutate(iso3c = map_iso3(Entity)) %>%
-  dplyr::filter(!is.na(iso3c)) # Remove regional aggregates and unmatched entities
+  dplyr::filter(!is.na(iso3c))
 
 # =========================
 # 3) ECONOMIC INDICATORS: GDP per capita PPP (World Bank)

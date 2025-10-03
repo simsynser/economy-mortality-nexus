@@ -1,6 +1,9 @@
-GDP per capita (current US$) — World Development Indicators (ID: NY.GDP.PCAP.CD)
+GDP per capita, PPP (constant 2017 international $) — World Development Indicators (ID: NY.GDP.PCAP.PP.KD)
 Source: World Bank (WDI). Original data compiled from national statistical offices, central banks, OECD, and WB staff estimates.
 License: Creative Commons Attribution 4.0 International (CC BY 4.0) — https://creativecommons.org/licenses/by/4.0/
-URL: https://data.worldbank.org/indicator/NY.GDP.PCAP.CD
+URL: https://databank.worldbank.org/reports.aspx?source=2&type=metadata&series=NY.GDP.PCAP.PP.KD
 Retrieved for this repository: 2024-12-09
 Data file(s) in this repo: data_raw/gdp/gdp-per-capita-worldbank.csv
+Reference year: 2022 economic data
+Base year for PPP conversion: 2017
+Note: This analysis uses 2017-base PPP data. World Bank has since updated NY.GDP.PCAP.PP.KD to use 2021 as the base year; values in newer downloads differ by ~17% due to 2017-2021 global inflation adjustment. The base year change does not affect cross-country correlations.

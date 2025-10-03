@@ -1,4 +1,4 @@
-# COVID-19 Wealth-Mortality Nexus Analysis Pipeline
+# COVID-19 Economy-Mortality Nexus Analysis Pipeline
 
 ## Overview
 
@@ -26,8 +26,8 @@ ready_to_import/
 ## Data Sources
 
 See **[DATA_SOURCES.md](DATA_SOURCES.md)** for complete licensing information and snapshot dates.
-
 **Datasets include:**
+- Population ages 65+ (World Bank WDI via UN WPP)
 - Median age (UN WPP via OWID)
 - GDP per capita (World Bank WDI)  
 - UHC service coverage (WHO via World Bank)
@@ -35,6 +35,11 @@ See **[DATA_SOURCES.md](DATA_SOURCES.md)** for complete licensing information an
 - Vaccination doses (OWID/WHO)
 
 ## Key Methodological Improvements
+
+**Age Demographics:**
+- Uses population 65+ (%) as demographic vulnerability indicator
+- Provides better COVID-19 risk stratification than median age
+- Based on 2022 midyear estimates from World Bank WDI
 
 **Vaccination Data:**
 - Uses `nearest_date()` approach: closest observation to 2023-05-05 (WHO/OWID standard)

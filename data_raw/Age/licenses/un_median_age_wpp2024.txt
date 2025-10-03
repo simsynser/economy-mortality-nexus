@@ -7,6 +7,6 @@ Suggested citation: UN, World Population Prospects (2024) – processed by Our W
 OWID URL: https://ourworldindata.org/grapher/median-age
 UN URL: https://population.un.org/wpp/downloads/
 Retrieved for this repository: 2025-03-20 (from OWID, last updated by OWID: 2024-07-12)
-Data file(s) in this repo: /data_raw/age/age2022.csv
+Data file(s) in this repo: data_raw/age/age2022.csv
 UN Disclaimer: The designations employed and the presentation of material do not imply the expression of any opinion by the United Nations concerning the legal status of any country, territory, city or area, or of its authorities, or concerning the delimitation of its frontiers or boundaries. No UN endorsement is implied.
 OWID Note: Data processed by Our World in Data includes standardizing country names and world region definitions, converting units, calculating derived indicators, and adapting metadata.
