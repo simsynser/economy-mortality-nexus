@@ -13,14 +13,14 @@ This repository bundles snapshot copies of third-party datasets for reproducibil
 
 ## Bundled files
 
-| Dataset | In-repo file(s) | Original source | License |
-|---|---|---|---|
-| Median age (2022) | `data_raw/age/age2022.csv` | United Nations, World Population Prospects 2024 **via Our World in Data** | UN **CC BY 3.0 IGO**; OWID **CC BY 4.0** |
-| Population 65+ (%) | `data_raw/age_alt/greater_equal65_worldBank.csv` | World Bank WDI (UN World Population Prospects) | **CC BY 4.0** |
-| GDP per capita, PPP (constant 2017 int'l $) | `data_raw/gdp/gdp-per-capita-worldbank.csv` | World Bank, World Development Indicators (NY.GDP.PCAP.PP.KD) | **CC BY 4.0** |
-| UHC Service Coverage Index (2021) | `data_raw/health/healthcare-access-quality-un.csv` | WHO Global Health Observatory (via World Bank API/OWID) | **CC BY 4.0** + WHO additional terms |
-| Excess mortality, cumulative per million (to 2023-05-05) | `data_raw/mortality/cumulative-excess-deaths-per-million-covid.csv` | Human Mortality Database (STMF) & World Mortality Dataset (Karlinsky & Kobak) — **processed by** Our World in Data | **CC BY 4.0** |
-| COVID-19 vaccine doses per 100 | `data_raw/vaccination/covid-19-vaccine-doses-administered-per-100-people.csv` | Our World in Data (counts from WHO; per-capita using UN WPP 2022) | **CC BY 4.0** (+ WHO terms when citing WHO directly) |
+| Dataset | Timeframe | In-repo file(s) | Original source | License |
+|---|---|---|---|---|
+| Median age | 2022 | `data_raw/age/age2022.csv` | United Nations, World Population Prospects 2024 **via Our World in Data** | UN **CC BY 3.0 IGO**; OWID **CC BY 4.0** |
+| Population 65+ (%) | 2022 | `data_raw/age_alt/greater_equal65_worldBank.csv` | World Bank WDI (UN World Population Prospects) | **CC BY 4.0** |
+| GDP per capita, PPP (constant 2017 int'l $) | 2022 | `data_raw/gdp/gdp-per-capita-worldbank.csv` | World Bank, World Development Indicators (NY.GDP.PCAP.PP.KD) | **CC BY 4.0** |
+| UHC Service Coverage Index | 2021 | `data_raw/health/healthcare-access-quality-un.csv` | WHO Global Health Observatory (via World Bank API/OWID) | **CC BY 4.0** + WHO additional terms |
+| Excess mortality, cumulative per million | Jan. 01 2020 - May 05 2023 | `data_raw/mortality/cumulative-excess-deaths-per-million-covid.csv` | Human Mortality Database (STMF) & World Mortality Dataset (Karlinsky & Kobak) — **processed by** Our World in Data | **CC BY 4.0** |
+| COVID-19 vaccine doses per 100 | - May 05 2023 | `data_raw/vaccination/covid-19-vaccine-doses-administered-per-100-people.csv` | Our World in Data (counts from WHO; per-capita using UN WPP 2022) | **CC BY 4.0** (+ WHO terms when citing WHO directly) |
 
 ### Processing notes
 - **Median age**: Uses 2022 estimates, filtered by year, with regional aggregates removed based on missing ISO3c codes.
