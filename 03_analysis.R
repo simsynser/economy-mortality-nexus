@@ -128,6 +128,49 @@ df_complete_all <- dat %>%
   ) %>%
   mutate(continent = countrycode(iso3c, origin = "iso3c", destination = "continent"))
 
+
+###########new
+#show diff between closest data point and May 05 2023 in vacc dataset
+df_complete_all %>% 
+  dplyr::mutate(dist = abs(vax_day - as.Date("2023-05-05"))) %>%
+  #dplyr::filter(dist <= 100)
+  
+  ggplot2::ggplot(data = ., aes(x=iso3c, y = dist)) +
+  geom_point() +
+  ylab("diff |Closest data point - 2023-05-05| [days]") + 
+  theme(axis.text=element_text(size=5),
+        axis.title.x = element_blank())
+  
+  
+#show vacc over time for 79 countries
+vacc <- load_csv(
+    "vaccination",
+    here::here("data_raw", "vaccination", "covid-19-vaccine-doses-administered-per-100-people.csv")
+  )
+
+vacc %>%
+  dplyr::left_join(
+    .,
+    vaccination_data_clean,
+    by=c("Entity" = "Entity")
+  ) %>%
+  dplyr::filter(iso3c %in% unique(df_complete_all$iso3c)) %>%
+
+ggplot2::ggplot(data = ., aes(x = Day.x, y = `COVID-19 doses (cumulative, per hundred)`)) +
+  facet_wrap(~Entity, ncol = 6) +
+  geom_line() +
+  theme_bw() +
+  theme(axis.title.x = element_blank()) + 
+  ylab("COVID-19 vaccines (cumulative doses per 100 people)") +
+  geom_vline(xintercept = as.numeric(as.Date("2023-05-05")), 
+             color = "red", linetype = "dashed", size = 0.5)
+  
+
+  
+  
+############
+
+
 # ---- Export Complete Cases Information -----------------------------------
 # Export country list for mapping/visualization purposes
 readr::write_csv(
