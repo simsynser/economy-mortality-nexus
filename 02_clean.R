@@ -25,6 +25,8 @@
 
 source(here::here("00_library_loader.R"))
 
+library(aods3)
+
 # Verify required objects from loader
 stopifnot(
   exists("excess_dat"), exists("vaccination_data_clean"),
@@ -49,13 +51,13 @@ est_excess_gam_only <- function(df, target = TARGET_DATE) {
 
   # Insufficient data - exclude from analysis
   if (nrow(df) == 0) {
-    return(tibble::tibble(value = NA_real_, method = "no_data"))
+    return(tibble::tibble(value = NA_real_, ci_low =  NA_real_, ci_up =  NA_real_, method = "no_data"))
   }
 
   # Insufficient unique time points for GAM - exclude from analysis
   n_uniq <- length(unique(df$x))
   if (n_uniq < 3L) {
-    return(tibble::tibble(value = NA_real_, method = "insufficient_data"))
+    return(tibble::tibble(value = NA_real_, ci_low =  NA_real_, ci_up =  NA_real_, method = "insufficient_data"))
   }
 
   # Attempt GAM fitting with dynamic k parameter
@@ -64,18 +66,18 @@ est_excess_gam_only <- function(df, target = TARGET_DATE) {
 
   # GAM fitting failed - exclude from analysis
   if (inherits(fit, "try-error")) {
-    return(tibble::tibble(value = NA_real_, method = "gam_failed"))
+    return(tibble::tibble(value = NA_real_, ci_low =  NA_real_, ci_up =  NA_real_, method = "gam_failed"))
   }
 
   # Target date outside observed range - exclude from analysis
   # (avoids extrapolation beyond data support)
   if (target < min(df$Day) || target > max(df$Day)) {
-    return(tibble::tibble(value = NA_real_, method = "outside_range"))
+    return(tibble::tibble(value = NA_real_, ci_low =  NA_real_, ci_up =  NA_real_, method = "outside_range"))
   }
 
   # Successful GAM prediction within observed range
-  pred <- mgcv::predict.gam(fit, newdata = data.frame(x = as.numeric(target)))
-  return(tibble::tibble(value = as.numeric(pred), method = "gam_success"))
+  pred <- mgcv::predict.gam(fit, newdata = data.frame(x = as.numeric(target)), se.fit = TRUE)
+  return(tibble::tibble(value = as.numeric(pred$fit),ci_low = (pred$fit - (1.96 * pred$se.fit)), ci_up = (pred$fit + (1.96 * pred$se.fit)),  method = "gam_success"))   #
 }
 
 # ---- Process Excess Mortality Data (GAM-Only) -------------------------------
@@ -107,7 +109,9 @@ mortality_data_clean <- mortality_processing %>%
   dplyr::filter(method == "gam_success", !is.na(iso3c), !is.na(value)) %>%
   dplyr::transmute(
     iso3c,
-    cum_excess_per_million_proj_all_ages = value
+    cum_excess_per_million_proj_all_ages = value,
+    low = ci_low,
+    up = ci_up
   )
 
 message("[02_clean] Successfully processed ", nrow(mortality_data_clean), " countries with GAM estimates")
