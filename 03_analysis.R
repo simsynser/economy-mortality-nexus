@@ -166,7 +166,34 @@ ggplot2::ggplot(data = ., aes(x = Day.x, y = `COVID-19 doses (cumulative, per hu
              color = "red", linetype = "dashed", size = 0.5)
   
 
+############
+
+
+# ---- Compute Relative CI of GAM estimated excess mortality and plot -----------------------------------
+
+###Calculate relative CI width
+
+mean_abs_y <-  mortality_data_clean %>%
+  dplyr::filter(iso3c %in% unique(df_complete_all$iso3c)) %>% 
+  {mean(abs(.$cum_excess_per_million_proj_all_ages), na.rm = TRUE)}
+
+mortality_data_clean %>%
   
+  dplyr::filter(iso3c %in% unique(df_complete_all$iso3c)) %>%  
+  
+  ggplot(., aes(x= reorder(iso3c, -((up-low) / mean_abs_y) * 100), y = ((up-low) / mean_abs_y) * 100)) +
+  geom_col(fill = "steelblue", alpha = 0.7) +
+  coord_flip()+
+  ylab("Relative CI width [% of mean absolute excess across all countries]") +
+  xlab("Country") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 7)) 
+
+mortality_data_clean %>%
+  
+  dplyr::filter(iso3c %in% unique(df_complete_all$iso3c)) %>% 
+   {((.$up-.$low) / mean_abs_y) * 100} %>%
+  max()
   
 ############
 
