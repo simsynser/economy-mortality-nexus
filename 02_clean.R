@@ -77,7 +77,7 @@ est_excess_gam_only <- function(df, target = TARGET_DATE) {
 
   # Successful GAM prediction within observed range
   pred <- mgcv::predict.gam(fit, newdata = data.frame(x = as.numeric(target)), se.fit = TRUE)
-  return(tibble::tibble(value = as.numeric(pred$fit),ci_low = (pred$fit - (1.96 * pred$se.fit)), ci_up = (pred$fit + (1.96 * pred$se.fit)),  method = "gam_success"))   #
+  return(tibble::tibble(value = c(pred$fit),ci_low = c(pred$fit - (1.96 * pred$se.fit)), ci_up = c(pred$fit + (1.96 * pred$se.fit)),  method = "gam_success"))   #
 }
 
 # ---- Process Excess Mortality Data (GAM-Only) -------------------------------
