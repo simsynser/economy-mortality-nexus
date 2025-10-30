@@ -49,11 +49,11 @@ world <- world %>%
   ))
 var_labels <- c(
   gdp_q = "GDP per Capita (2022)\n[PPP, 2017 Int'l $]",
-  uhc_q = "UHC Service Coverage (2021)\n[Index 0-100]",
-  vacc_q = "Cumulative COVID-19 Vaccines\n[doses per 100 people, per May 05 2023]",
+  uhc_q = "UHC Service Coverage (2021)\n[Index 0–100]",
+  vacc_q = "Cumulative COVID–19 Vaccines\n[doses per 100 people, per 05 May 2023]",
   median_age_q = "Population Median Age (2022)\n[years]",
   age_65plus_q = "Population Aged 65+ (2022)\n[%]",
-  excess_mort_q = "Cumulative Excess Mortality\n[per million, 2020 to May 05 2023]"
+  excess_mort_q = "Cumulative Excess Mortality\n[per million, 2020 to 05 May 2023]"
 )
 create_quartile_scale <- function(palette_name, level_labels) {
   scale_fill_brewer(
